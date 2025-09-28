@@ -1,0 +1,8 @@
+# ignore ALL .log files
+*.log
+
+# ignore config.json
+config.json
+
+#ignore node_modules
+node_modules/
