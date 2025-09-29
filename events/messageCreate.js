@@ -18,5 +18,5 @@ module.exports = {
                 message.reply("❌ Error executing prefix command.");
             }
         }
-    }
+    },
 };
