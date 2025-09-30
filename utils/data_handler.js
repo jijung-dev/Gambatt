@@ -2,6 +2,7 @@ const { Jsoning, MathOps } = require("jsoning");
 const dataTable = new Jsoning("../Gambatt/gamedata/data.json");
 const characterTable = new Jsoning("../Gambatt/gamedata/characterdata.json");
 const dataUser = new Jsoning("../Gambatt/gamedata/userdata.json");
+const perserverTable = new Jsoning("../Gambatt/gamedata/perserverdata.json");
 
 class Character {
     constructor(
@@ -119,6 +120,17 @@ async function GetBanner() {
     return new Banner(banner_data.current_characters);
 }
 
+async function SetPrefix(guildID, newPrefix) {
+    const allPrefixes = (await perserverTable.get("prefix")) || {};
+    allPrefixes[guildID] = newPrefix;
+    await perserverTable.set("prefix", allPrefixes);
+}
+
+async function GetPrefix(guildID) {
+    const allPrefixes = (await perserverTable.get("prefix")) || {};
+    return allPrefixes[guildID] || ".";
+}
+
 module.exports = {
     Character,
     rarityIcons,
@@ -126,4 +138,6 @@ module.exports = {
     GetCharacter,
     GetCharacters,
     GetBanner,
+    SetPrefix,
+    GetPrefix,
 };

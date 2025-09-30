@@ -1,7 +1,9 @@
+const { GetPrefix } = require("../utils/data_handler");
+
 module.exports = {
     name: "messageCreate",
     async execute(client, message) {
-        const prefix = "."; // changeable
+        const prefix = await GetPrefix(message.guild.id);
 
         if (message.author.bot) return;
         if (!message.content.startsWith(prefix)) return;

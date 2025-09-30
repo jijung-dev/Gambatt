@@ -3,7 +3,10 @@ const {
     GetCharacter,
     rarityIcons,
     GetCharacters,
-} = require("../../utils/data_handler");
+} = require("../../utils/data_handler.js");
+
+const { setPagination } = require("../../utils/PaginationStore.js");
+const { GetPageButtons } = require("../../utils/PaginationButtons.js");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -60,27 +63,56 @@ async function ReplyView(target, { charname, edition, series }) {
     }
 
     const chars = await GetCharacters(charname, edition, series);
-    let embed2;
 
     if (chars.length > 1) {
-        embed2 = await GetMatchListEmbed(chars);
+        return SendMatchList(target, chars);
     } else if (chars.length == 0) {
-        embed2 = GetFailedEmbed();
+        return target.reply({
+            embeds: [GetFailedEmbed()],
+        });
     } else {
-        embed2 = await GetCharacterEmbed(chars[0]);
+        const embed = await GetCharacterEmbed(chars[0]);
+        return target.reply({
+            embeds: [embed],
+        });
     }
-
-    return target.reply({
-        embeds: [embed2],
-    });
 }
+
 function GetFailedEmbed() {
     return new EmbedBuilder()
         .setTitle("No Character Found")
         .setColor("#f50000");
 }
 
-async function GetMatchListEmbed(charactersMatch) {
+async function SendMatchList(target, charactersMatch) {
+    const embeds = await GetMatchListEmbeds(charactersMatch);
+    let currentPage = 0;
+
+    const reply = await target.reply({
+        embeds: [embeds[currentPage]],
+        components:
+            embeds.length > 1
+                ? [GetPageButtons(true, embeds.length === 1)]
+                : [],
+        fetchReply: true,
+    });
+
+    if (embeds.length > 1) {
+        setPagination(reply.id, { currentPage, embeds });
+
+        setTimeout(async () => {
+            deletePagination(reply.id);
+
+            try {
+                await reply.edit({
+                    components: [],
+                });
+            } catch (err) {}
+        }, 120000);
+    }
+}
+
+async function GetMatchListEmbeds(charactersMatch) {
     const entries = await Promise.all(
         charactersMatch.map(async (key) => {
             const entry = await GetCharacter(key);
@@ -92,10 +124,22 @@ async function GetMatchListEmbed(charactersMatch) {
         })
     );
 
-    return new EmbedBuilder()
-        .setTitle("Matched Characters")
-        .setDescription(entries.join("\n"))
-        .setColor("#858585");
+    const pageSize = 10;
+    const totalPages = Math.ceil(entries.length / pageSize);
+    const pages = [];
+
+    for (let i = 0; i < entries.length; i += pageSize) {
+        const pageIndex = i / pageSize;
+        pages.push(
+            new EmbedBuilder()
+                .setTitle("Matched Characters")
+                .setDescription(entries.slice(i, i + pageSize).join("\n"))
+                .setColor("#858585")
+                .setFooter({ text: `Page ${pageIndex + 1} / ${totalPages}` })
+        );
+    }
+
+    return pages;
 }
 
 async function GetCharacterEmbed(characterValue) {
@@ -108,14 +152,10 @@ async function GetCharacterEmbed(characterValue) {
         .addFields(
             { name: "Character", value: character.label, inline: false },
             { name: "Series", value: character.series, inline: false },
-            {
-                name: "Edition",
-                value: character.edition,
-                inline: false,
-            }
+            { name: "Edition", value: character.edition, inline: false }
         )
         .setImage(character.image)
-        .setColor(character.rarity === "ssr" ? "#FFD700" : "#C0C0C0"); // ✅ Optional: gold for SSR, silver for SR
+        .setColor(character.rarity === "ssr" ? "#FFD700" : "#C0C0C0");
 }
 
 function parseViewArgs(args) {

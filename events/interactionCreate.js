@@ -3,6 +3,19 @@ const { MessageFlags } = require("discord.js");
 module.exports = {
     name: "interactionCreate",
     async execute(client, interaction) {
+        if (
+            (interaction.isButton() || interaction.isStringSelectMenu()) &&
+            interaction.message?.interaction
+        ) {
+            const originalUserId = interaction.message.interaction.user.id;
+            if (interaction.user.id !== originalUserId) {
+                return interaction.reply({
+                    content: "⛔ This interaction is not for you.",
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
+        }
+
         if (interaction.isStringSelectMenu()) {
             const selectHandler = client.selects?.get(interaction.customId);
             if (selectHandler) {
