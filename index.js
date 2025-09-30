@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
 const { clientId, token, prefix = "." } = require("./config.json");
+const { LoadCharacterData } = require("./utils/data_handler");
 
 // Create client
 const client = new Client({
@@ -93,5 +94,6 @@ for (const file of eventFiles) {
 /* -------------------- Startup -------------------- */
 (async () => {
     await deploySlashCommands();
+    await LoadCharacterData();
     client.login(token);
 })();
