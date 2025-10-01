@@ -19,5 +19,12 @@
         "rarity": "sr",
         "image": "https://images-ext-1.discordapp.net/external/oOSF7V0NxgjNVo5UgKixNnawbmf-MruizCVyfE1CpHs/https/d19hynkch8r3hi.cloudfront.net/base-card-images/konosuba%253A-god%27s-blessing-on-this-wonderful-world%21/megumin-1.png?format=webp&quality=lossless&width=474&height=656",
         "edition": "Normal"
+    },
+    "test": {
+        "label": "tester",
+        "series": "lmao",
+        "rarity": "r",
+        "image": "https://images-ext-1.discordapp.net/external/Q7QlrR_k1iM8o6Dkr1RgLr2bBvM0UdihcvLA5kiGzEE/https/d19hynkch8r3hi.cloudfront.net/base-card-images/love%252C-chunibyo-%2526-other-delusions%21-lite/rikka-takanashi-summer_2023.png?format=webp&quality=lossless&width=474&height=656",
+        "edition": "Normal"
     }
 }

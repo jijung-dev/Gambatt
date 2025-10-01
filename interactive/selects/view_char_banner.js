@@ -32,16 +32,14 @@ async function ViewCharacterBanner() {
         characters.push(character);
     }
 
-    return new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder()
-            .setCustomId("view_char_banner")
-            .setPlaceholder("View other character in the banner")
-            .addOptions(
-                characters.map((c) => ({
-                    label: c.label,
-                    value: c.value,
-                    emoji: { id: rarityIcons[c.rarity].id },
-                }))
-            )
-    );
+    return new StringSelectMenuBuilder()
+        .setCustomId("view_char_banner")
+        .setPlaceholder("View other character in the banner")
+        .addOptions(
+            characters.map((c) => ({
+                label: c.label,
+                value: c.value,
+                emoji: { id: rarityIcons[c.rarity].id },
+            }))
+        );
 }

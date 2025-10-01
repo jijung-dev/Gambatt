@@ -41,6 +41,25 @@ module.exports = {
 
         try {
             await command.execute(interaction);
+
+            setTimeout(async () => {
+                try {
+                    const msg = await interaction.fetchReply();
+                    if (!msg || !msg.components.length) return;
+
+                    const disabledComponents = msg.components.map((row) => {
+                        row.components.forEach((c) => c.setDisabled(true));
+                        return row;
+                    });
+
+                    await msg.edit({ components: disabledComponents });
+                } catch (err) {
+                    console.error(
+                        "Failed to disable interaction components:",
+                        err
+                    );
+                }
+            }, 120000);
         } catch (error) {
             console.error(error);
             const replyPayload = {

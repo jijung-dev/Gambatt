@@ -31,18 +31,22 @@ const rarityIcons = {
         id: "1421962816755073085",
         image: "https://cdn.discordapp.com/emojis/1421962816755073085.png",
         emoji: "<:SSR:1421962816755073085>",
+        color: "#ffce64",
     },
     sr: {
         id: "1421962809742463028",
         image: "https://cdn.discordapp.com/emojis/1421962809742463028.png",
         emoji: "<:SR:1421962809742463028>",
+        color: "#b600ce",
     },
     r: {
         id: "1421962806097477672",
         image: "https://cdn.discordapp.com/emojis/1421962806097477672.png",
         emoji: "<:R_:1421962806097477672>",
+        color: "#64edff",
     },
 };
+
 async function HasCharacter(characterValue) {
     const character_data = await characterTable.get(characterValue);
 
@@ -65,12 +69,18 @@ async function LoadCharacterData() {
     }
     return cachedCharacters;
 }
-async function GetCharacters(charName, edition = null, series = null) {
+async function GetCharacters(
+    charName,
+    edition = null,
+    series = null,
+    rarity = null
+) {
     const character_data = await LoadCharacterData();
 
     const nameLower = charName?.toLowerCase() || null;
     const editionLower = edition?.toLowerCase() || null;
     const seriesLower = series?.toLowerCase() || null;
+    const rarityLower = rarity?.toLowerCase() || null;
 
     const results = Object.keys(character_data).filter((key) => {
         const entry = character_data[key];
@@ -87,7 +97,11 @@ async function GetCharacters(charName, edition = null, series = null) {
             ? entry.series.toLowerCase().includes(seriesLower)
             : true;
 
-        return matchName && matchEdition && matchSeries;
+        const matchRarity = rarityLower
+            ? entry.rarity.toLowerCase() === rarityLower
+            : true;
+
+        return matchName && matchEdition && matchSeries && matchRarity;
     });
 
     return results;

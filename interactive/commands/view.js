@@ -29,6 +29,12 @@ module.exports = {
                 .setName("series")
                 .setDescription("Character series (optional)")
                 .setRequired(false)
+        )
+        .addStringOption((option) =>
+            option
+                .setName("rarity")
+                .setDescription("Character rarity (optional)")
+                .setRequired(false)
         ),
     name: "view",
     aliases: ["v"],
@@ -37,11 +43,13 @@ module.exports = {
         const charname = interaction.options.getString("charname");
         const edition = interaction.options.getString("edition");
         const series = interaction.options.getString("series");
+        const rarity = interaction.options.getString("rarity");
 
         await ReplyView(interaction, {
             charname,
             edition,
             series,
+            rarity,
         });
     },
 
@@ -51,18 +59,19 @@ module.exports = {
     },
 };
 
-async function ReplyView(target, { charname, edition, series }) {
+async function ReplyView(target, { charname, edition, series, rarity }) {
     if (
         (!charname || charname.trim() === "") &&
         (!edition || edition.trim() === "") &&
-        (!series || series.trim() === "")
+        (!series || series.trim() === "") &&
+        (!rarity || rarity.trim() === "")
     ) {
         return target.reply({
             content: "Use `.help view` for more info",
         });
     }
 
-    const chars = await GetCharacters(charname, edition, series);
+    const chars = await GetCharacters(charname, edition, series, rarity);
 
     if (chars.length > 1) {
         return SendMatchList(target, chars);
@@ -155,24 +164,27 @@ async function GetCharacterEmbed(characterValue) {
             { name: "Edition", value: character.edition, inline: false }
         )
         .setImage(character.image)
-        .setColor(character.rarity === "ssr" ? "#FFD700" : "#C0C0C0");
+        .setColor(rarityIcon.color);
 }
 
 function parseViewArgs(args) {
     let charnameParts = [];
     let edition = null;
     let series = null;
+    let rarity = null;
 
     for (const part of args) {
         if (part.startsWith("e:")) {
             edition = part.slice(2);
         } else if (part.startsWith("s:")) {
             series = part.slice(2);
+        } else if (part.startsWith("r:")) {
+            rarity = part.slice(2);
         } else {
             charnameParts.push(part);
         }
     }
 
     const charname = charnameParts.join(" ").trim() || null;
-    return { charname, edition, series };
+    return { charname, edition, series, rarity };
 }

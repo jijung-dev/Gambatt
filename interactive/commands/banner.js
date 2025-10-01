@@ -1,4 +1,8 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const {
+    SlashCommandBuilder,
+    EmbedBuilder,
+    ActionRowBuilder,
+} = require("discord.js");
 const {
     GetCharacter,
     rarityIcons,
@@ -25,15 +29,21 @@ module.exports = {
 
 async function ReplyBanner(target, client) {
     const { GetRoll10 } = client.buttons.get("roll10");
+    const { GetRoll } = client.buttons.get("roll");
     const { ViewCharacterBanner } = client.selects.get("view_char_banner");
 
     const banner = await GetBanner();
     const embed2 = await GetBannerEmbed(banner.current_characters[0]);
     const select2 = await ViewCharacterBanner();
+    const roll1 = await GetRoll();
+    const roll10 = await GetRoll10();
 
     return target.reply({
         embeds: [embed2],
-        components: [select2, GetRoll10()],
+        components: [
+            new ActionRowBuilder().addComponents(select2),
+            new ActionRowBuilder().addComponents(roll1, roll10),
+        ],
     });
 }
 
