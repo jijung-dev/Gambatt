@@ -23,7 +23,7 @@ module.exports = {
     },
 };
 
-async function ViewCharacterBanner() {
+async function ViewCharacterBanner(userId) {
     const banner = await GetBanner();
 
     const characters = [];
@@ -33,7 +33,7 @@ async function ViewCharacterBanner() {
     }
 
     return new StringSelectMenuBuilder()
-        .setCustomId("view_char_banner")
+        .setCustomId(`view_char_banner|${userId}`)
         .setPlaceholder("View other character in the banner")
         .addOptions(
             characters.map((c) => ({

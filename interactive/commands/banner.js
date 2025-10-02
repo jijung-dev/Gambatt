@@ -34,9 +34,10 @@ async function ReplyBanner(target, client) {
 
     const banner = await GetBanner();
     const embed2 = await GetBannerEmbed(banner.current_characters[0]);
-    const select2 = await ViewCharacterBanner();
-    const roll1 = await GetRoll();
-    const roll10 = await GetRoll10();
+    const userID = target.user?.id || target.author?.id;
+    const select2 = await ViewCharacterBanner(userID);
+    const roll1 = await GetRoll(userID);
+    const roll10 = await GetRoll10(userID);
 
     return target.reply({
         embeds: [embed2],
@@ -64,5 +65,5 @@ async function GetBannerEmbed(characterValue) {
             }
         )
         .setImage(character.image)
-        .setColor(character.rarity === "ssr" ? "#FFD700" : "#C0C0C0"); // ✅ Optional: gold for SSR, silver for SR
+        .setColor(rarityIcon.color);
 }

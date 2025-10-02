@@ -46,6 +46,13 @@ const rarityIcons = {
         color: "#64edff",
     },
 };
+const currencyIcon = {
+    cube: {
+        id: "1423067106441691146",
+        image: "https://cdn.discordapp.com/emojis/1423067106441691146.png",
+        emoji: "<:cube:1423067106441691146>",
+    },
+};
 
 async function HasCharacter(characterValue) {
     const character_data = await characterTable.get(characterValue);
@@ -148,6 +155,7 @@ async function GetPrefix(guildID) {
 module.exports = {
     Character,
     rarityIcons,
+    currencyIcon,
     LoadCharacterData,
     GetCharacter,
     GetCharacters,

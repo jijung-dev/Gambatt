@@ -6,6 +6,13 @@
         "image": "https://images-ext-1.discordapp.net/external/Q7QlrR_k1iM8o6Dkr1RgLr2bBvM0UdihcvLA5kiGzEE/https/d19hynkch8r3hi.cloudfront.net/base-card-images/love%252C-chunibyo-%2526-other-delusions%21-lite/rikka-takanashi-summer_2023.png?format=webp&quality=lossless&width=474&height=656",
         "edition": "Summer"
     },
+    "mai_sakurajima_bunny": {
+        "label": "Mai Sakurajima",
+        "series": "Rascal Does Not Dream of Bunny Girl Senpai",
+        "rarity": "ssr",
+        "image": "https://images-ext-1.discordapp.net/external/Xgi-sbmdv4WiW4E7wgEZXTU7_S8h16H142pJbgD969A/https/d19hynkch8r3hi.cloudfront.net/base-card-images/rascal-does-not-dream-of-bunny-girl-senpai/mai-sakurajima-1.png?format=webp&quality=lossless&width=474&height=656",
+        "edition": "Bunny"
+    },
     "rikka_takanashi": {
         "label": "Rikka Takanashi",
         "series": "Chuunibyou Demo Koi Ga Shitai",

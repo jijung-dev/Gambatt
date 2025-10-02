@@ -10,9 +10,9 @@ module.exports = {
     },
 };
 
-function GetRoll10() {
+function GetRoll10(userId) {
     return new ButtonBuilder()
-        .setCustomId("roll10")
+        .setCustomId(`roll10|${userId}`)
         .setLabel("Roll X10")
         .setEmoji("🎲")
         .setStyle(ButtonStyle.Primary);

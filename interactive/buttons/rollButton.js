@@ -9,9 +9,9 @@ module.exports = {
         await ReplyRoll(interaction, client);
     },
 };
-function GetRoll() {
+function GetRoll(userId) {
     return new ButtonBuilder()
-        .setCustomId("roll")
+        .setCustomId(`roll|${userId}`)
         .setLabel("Roll")
         .setEmoji("🎲")
         .setStyle(ButtonStyle.Primary);
