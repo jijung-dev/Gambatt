@@ -23,7 +23,8 @@ module.exports = {
             components: [
                 GetPageButtons(
                     pagination.currentPage === 0,
-                    pagination.currentPage === pagination.embeds.length - 1
+                    pagination.currentPage === pagination.embeds.length - 1,
+                    interaction.user
                 ),
             ],
         });

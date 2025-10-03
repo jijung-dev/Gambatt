@@ -14,13 +14,13 @@ module.exports = {
         }
 
         pagination.currentPage = Math.max(0, pagination.currentPage - 1);
-
         await interaction.update({
             embeds: [pagination.embeds[pagination.currentPage]],
             components: [
                 GetPageButtons(
                     pagination.currentPage === 0,
-                    pagination.currentPage === pagination.embeds.length - 1
+                    pagination.currentPage === pagination.embeds.length - 1,
+                    interaction.user
                 ),
             ],
         });
