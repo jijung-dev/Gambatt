@@ -1,9 +1,8 @@
 const { ActionRowBuilder, StringSelectMenuBuilder } = require("discord.js");
 const {
-    GetCharacter,
     rarityIcons,
-    GetBanner,
 } = require("../../utils/data_handler");
+const { GetCharacter, GetBanner } = require("../../utils/characterdata_handler");
 
 module.exports = {
     id: "view_char_banner",

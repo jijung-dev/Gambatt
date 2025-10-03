@@ -1,10 +1,8 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const {
-    GetCharacter,
     rarityIcons,
-    GetBanner,
-    GetCharacters,
 } = require("../../utils/data_handler");
+const { GetCharacters, GetCharacter, GetBanner } = require("../../utils/characterdata_handler");
 
 module.exports = {
     data: new SlashCommandBuilder().setName("roll").setDescription("Roll once"),

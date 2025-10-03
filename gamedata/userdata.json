@@ -1,1 +1,12 @@
-{}
+{
+    "530940887908220929": {
+        "balance": 0,
+        "collection": {
+            "rikka_takanashi_summer": { "level": 1, "xp_now": 0, "xp_max": 10 },
+            "mai_sakurajima_bunny": { "level": 2, "xp_now": 1, "xp_max": 10 },
+            "megumin_winter": { "level": 3, "xp_now": 2, "xp_max": 10 }
+        },
+        "inventory": {}
+    },
+    "861761239821320202": { "balance": 0, "collection": {}, "inventory": {} }
+}

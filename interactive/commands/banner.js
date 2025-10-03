@@ -4,10 +4,9 @@ const {
     ActionRowBuilder,
 } = require("discord.js");
 const {
-    GetCharacter,
     rarityIcons,
-    GetBanner,
 } = require("../../utils/data_handler");
+const { GetCharacter, GetBanner } = require("../../utils/characterdata_handler");
 
 module.exports = {
     data: new SlashCommandBuilder()
