@@ -1,8 +1,12 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { rarityIcons, currencyIcon } = require("../../utils/data_handler.js");
+const { RollCharacter } = require("./roll.js");
 const {
-    rarityIcons,
-} = require("../../utils/data_handler");
-const { RollCharacter } = require("./roll");
+    AddCharacterToCollection,
+    GetPlayerData,
+    GetRarityValue,
+    ReduceBalance,
+} = require("../../utils/userdata_handler");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -13,101 +17,151 @@ module.exports = {
     ReplyRoll10,
 
     async execute(interaction) {
-        await ReplyRoll10(interaction, interaction.client);
+        await ReplyRoll10(interaction);
     },
 
-    async executeMessage(message, args) {
-        await ReplyRoll10(message, message.client);
+    async executeMessage(message) {
+        await ReplyRoll10(message);
     },
 };
 
-async function ReplyRoll10(target, client) {
-    const user = target.user || target.author;
+// =============================== MAIN ===============================
 
-    const loadingEmbed = new EmbedBuilder()
-        .setTitle("🎲 Rolling...")
-        .setColor("#6e6e6e")
-        .setAuthor({
-            name: user.username,
-            iconURL: user.displayAvatarURL(),
-        });
+async function ReplyRoll10(target) {
+    const user = getUser(target);
+    const player = await GetPlayerData(user);
 
-    const replyMessage = await target.reply({
-        embeds: [loadingEmbed],
-        fetchReply: true,
-    });
-
-    let characters = [];
-    let emojiDesc = ""; // accumulate emojis here
-
-    for (let index = 0; index < 10; index++) {
-        const character = await RollCharacter();
-        characters.push(character);
-
-        const rarityIcon = rarityIcons[character.rarity];
-        emojiDesc += `${rarityIcon.emoji} `; // append emoji
-
-        const rollingResult = new EmbedBuilder()
-            .setTitle(`🎲 Rolled ${index + 1}/10`)
-            .setDescription(emojiDesc)
-            .setColor(rarityIcon.color)
-            .setAuthor({
-                name: user.username,
-                iconURL: user.displayAvatarURL(),
-            });
-
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await replyMessage.edit({ embeds: [rollingResult] });
+    const totalCost = 160 * 10;
+    if (player.balance < totalCost) {
+        return sendEmbed(target, failedEmbed(user, player.balance, totalCost));
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await ReduceBalance(user, totalCost);
 
-    const finalEmbed = new EmbedBuilder()
-        .setTitle("🎉 Roll Results (10x)")
-        .setColor("#ffffff")
-        .setAuthor({
-            name: user.username,
-            iconURL: user.displayAvatarURL(),
-        })
-        .setDescription(
-            characters
-                .map(
-                    (c) =>
-                        `${rarityIcons[c.rarity].emoji} **${c.label}** - \`${
-                            c.edition
-                        }\` - *${c.series}*`
-                )
-                .join("\n")
+    const replyMessage = await sendEmbed(
+        target,
+        createEmbed(user, "🎲 Rolling..."),
+        true
+    );
+
+    const generated = [];
+    let emojiLine = "";
+
+    for (let i = 0; i < 10; i++) {
+        const character = await RollCharacter();
+        generated.push(character);
+        emojiLine += `${rarityIcons[character.rarity].emoji} `;
+
+        await wait(300);
+        await editEmbed(
+            replyMessage,
+            createEmbed(
+                user,
+                `🎲 Rolled ${i + 1}/10`,
+                rarityIcons[character.rarity].color,
+                emojiLine
+            )
         );
+    }
 
-    return replyMessage.edit({ embeds: [finalEmbed] });
+    const hasSR = generated.some(
+        (c) => c.rarity === "sr" || c.rarity === "ssr"
+    );
+    if (!hasSR) {
+        const rIndex = generated.findIndex((c) => c.rarity === "r");
+        const forced = await RollCharacterForcedToSR();
+        generated[rIndex !== -1 ? rIndex : 0] = forced;
+    }
 
-    // const resultEmbed = await GetCharacterEmbed(character, user);
+    const results = [];
+    for (const char of generated) {
+        const addResult = await AddCharacterToCollection(
+            user,
+            char.value,
+            char.rarity
+        );
+        results.push({ character: char, result: addResult });
+    }
 
-    // return replyMessage2.edit({
-    //     embeds: [resultEmbed],
-    // });
+    await wait(500);
+    await editEmbed(replyMessage, finalResultsEmbed(user, results));
 }
 
-// async function GetCharacterEmbed(character, user) {
-//     const rarityIcon = rarityIcons[character.rarity];
+// =============================== EMBEDS ===============================
 
-//     return new EmbedBuilder()
-//         .setThumbnail(rarityIcon.image)
-//         .setTitle("Rolled")
-//         .addFields(
-//             { name: "Character", value: character.label, inline: false },
-//             { name: "Series", value: character.series, inline: false },
-//             {
-//                 name: "Edition",
-//                 value: character.edition,
-//                 inline: false,
-//             }
-//         )
-//         .setImage(character.image)
-//         .setColor(rarityIcon.color)
-//         .setAuthor({
-//             name: user.username,
-//             iconURL: user.displayAvatarURL(),
-//         });
-// }
+function createEmbed(user, title, color = "#6e6e6e", description = null) {
+    const embed = new EmbedBuilder()
+        .setTitle(title)
+        .setColor(color)
+        .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() });
+
+    if (description) embed.setDescription(description);
+    return embed;
+}
+
+function sendEmbed(target, embed, fetchReply = false) {
+    return target.reply({ embeds: [embed], fetchReply });
+}
+
+function editEmbed(message, embed) {
+    return message.edit({ embeds: [embed] });
+}
+
+function failedEmbed(user, balance, cost) {
+    return createEmbed(
+        user,
+        `Not enough ${currencyIcon.cube.emoji}`,
+        "#ff0000",
+        `You have **${balance} ${currencyIcon.cube.emoji}**, but need **${cost} ${currencyIcon.cube.emoji}**.`
+    );
+}
+
+function finalResultsEmbed(user, results) {
+    const embed = new EmbedBuilder()
+        .setTitle("🎉 Roll Results (10x) 🎉")
+        .setColor("#ffffff")
+        .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() });
+
+    results.forEach(({ character, result }) => {
+        const icon = rarityIcons[character.rarity].emoji;
+        const title = `${icon} **${character.label}** — \`${character.edition}\` — *${character.series}*`;
+
+        let info;
+        if (result.isFirstTime) {
+            info = "🆕 First time!";
+        } else if (result.isLevelUp) {
+            const newLv = result.character.level;
+            const oldLv = Math.max(1, newLv - 1);
+            info = `⬆️ Level Up! (Lv.${oldLv} → **Lv.${newLv}**)`;
+        } else {
+            const addValue = GetRarityValue(character.rarity).addValue;
+            info = `🔁 Duplicate (+ \`${addValue}\` XP)`;
+        }
+
+        embed.addFields({ name: title, value: info });
+    });
+
+    return embed;
+}
+
+// =============================== PITY ===============================
+
+async function RollCharacterForcedToSR() {
+    for (let i = 0; i < 1000; i++) {
+        const c = await RollCharacter();
+        if (c.rarity === "sr" || c.rarity === "ssr") return c;
+    }
+    return {
+        value: "FORCED_SR",
+        label: "Forced SR",
+        series: "Pity",
+        edition: "Pity",
+        rarity: "sr",
+        image: null,
+    };
+}
+
+// =============================== UTILS ===============================
+
+const getUser = (target) => target.user || target.author;
+const wait = (ms) => new Promise((res) => setTimeout(res, ms));

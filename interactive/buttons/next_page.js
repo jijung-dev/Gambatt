@@ -1,3 +1,4 @@
+const { MessageFlags } = require("discord.js");
 const { GetPageButtons } = require("../../utils/PaginationButtons");
 const { getPagination } = require("../../utils/PaginationStore");
 
@@ -9,7 +10,7 @@ module.exports = {
         if (!pagination) {
             return interaction.reply({
                 content: "Pagination expired.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 

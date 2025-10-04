@@ -37,8 +37,68 @@ async function StartPlayer(user) {
     return newPlayer;
 }
 
+async function ReduceBalance(user, amount) {
+    const player = await GetPlayerData(user);
+    player.balance -= amount;
+    await userTable.set(user.id, player);
+}
+
+async function AddCharacterToCollection(user, characterValue, rarity) {
+    const player = await GetPlayerData(user);
+    const rarityValue = GetRarityValue(rarity);
+
+    let isFirstTime = false;
+    let isLevelUp = false;
+    let character = player.collection[characterValue];
+
+    if (!character) {
+        character = {
+            level: rarityValue.level,
+            xp_now: rarityValue.xp_on_start,
+            xp_max: rarityValue.xp_max,
+        };
+
+        player.collection[characterValue] = character;
+        isFirstTime = true;
+    } else {
+        character.xp_now += rarityValue.addValue;
+
+        if (character.xp_now >= character.xp_max) {
+            isLevelUp = true;
+            character.level++;
+            character.xp_now -= character.xp_max;
+            if (rarity.toLowerCase() === "r" && character.level == 2) {
+                character.xp_max += 50;
+            } else {
+                character.xp_max += 100;
+            }
+        }
+    }
+
+    await userTable.set(user.id, player);
+    return { isFirstTime, isLevelUp, character };
+}
+
+function GetRarityValue(rarity) {
+    switch (rarity.toLowerCase()) {
+        case "ssr":
+            return { addValue: 60, level: 3, xp_on_start: 90, xp_max: 200 };
+        case "sr":
+            return { addValue: 10, level: 2, xp_on_start: 20, xp_max: 100 };
+        case "r":
+            return { addValue: 5, level: 1, xp_on_start: 10, xp_max: 50 };
+        default:
+            return { addValue: 1, level: 1, xp_on_start: 1, xp_max: 1 };
+    }
+}
+
 async function GetCharacterFromCollection(user, characterValue) {
-    const character = (await GetPlayerData(user)).collection[characterValue];    
+    const character = (await GetPlayerData(user)).collection[characterValue];
+    if (!character) {
+        throw new Error(
+            `Character named: ${characterValue} does not exist in collection`
+        );
+    }
     return character;
 }
 
@@ -64,7 +124,10 @@ async function GetCharactersFromCollection(
 
 module.exports = {
     Player,
+    ReduceBalance,
+    GetRarityValue,
     GetPlayerData,
+    AddCharacterToCollection,
     GetCharactersFromCollection,
     GetCharacterFromCollection,
 };

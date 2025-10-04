@@ -1,12 +1,1 @@
-{
-    "530940887908220929": {
-        "balance": 0,
-        "collection": {
-            "rikka_takanashi_summer": { "level": 1, "xp_now": 0, "xp_max": 10 },
-            "mai_sakurajima_bunny": { "level": 2, "xp_now": 1, "xp_max": 10 },
-            "megumin_winter": { "level": 3, "xp_now": 2, "xp_max": 10 }
-        },
-        "inventory": {}
-    },
-    "861761239821320202": { "balance": 0, "collection": {}, "inventory": {} }
-}
+{"530940887908220929":{"balance":9982879,"collection":{"test":{"level":4,"xp_now":190,"xp_max":300},"megumin_winter":{"level":3,"xp_now":80,"xp_max":200},"rikka_takanashi_summer":{"level":3,"xp_now":150,"xp_max":200},"rikka_takanashi":{"level":3,"xp_now":0,"xp_max":200},"mai_sakurajima_bunny":{"level":3,"xp_now":90,"xp_max":200}},"inventory":{}},"861761239821320202":{"balance":9988639,"collection":{},"inventory":{}}}

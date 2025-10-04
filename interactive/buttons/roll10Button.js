@@ -6,7 +6,7 @@ module.exports = {
     GetRoll10,
 
     async execute(interaction, client) {
-        await ReplyRoll10(interaction, client);
+        await ReplyRoll10(interaction);
     },
 };
 
