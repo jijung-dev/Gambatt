@@ -1,6 +1,12 @@
 # ignore ALL .log files
 *.log
 
+# ignore ALL .zip files
+*.zip
+
+# ignore ALL .rar files
+*.rar
+
 # ignore config.json
 config.json
 
