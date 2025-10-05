@@ -1,48 +1,28 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const { rarityIcons } = require("../../utils/data_handler.js");
+import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import { rarityIcons } from "../../utils/data_handler.js";
+import { GetCharacters, GetCharacter } from "../../utils/characterdata_handler.js";
+import { setPagination, deletePagination } from "../../utils/PaginationStore.js";
+import { GetPageButtons } from "../../utils/PaginationButtons.js";
+import { toCodeBlock } from "../../utils/data_utils.js";
 
-const {
-    setPagination,
-    deletePagination,
-} = require("../../utils/PaginationStore.js");
-const { GetPageButtons } = require("../../utils/PaginationButtons.js");
-const {
-    GetCharacters,
-    GetCharacter,
-} = require("../../utils/characterdata_handler.js");
-const { toCodeBlock } = require("../../utils/data_utils.js");
-
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName("view")
         .setDescription("View character")
-        .addStringOption((option) =>
-            option
-                .setName("charname")
-                .setDescription("Character name (required)")
-                .setRequired(false)
+        .addStringOption(option =>
+            option.setName("charname").setDescription("Character name (optional)").setRequired(false)
         )
-        .addStringOption((option) =>
-            option
-                .setName("edition")
-                .setDescription("Character edition (optional)")
-                .setRequired(false)
+        .addStringOption(option =>
+            option.setName("edition").setDescription("Character edition (optional)").setRequired(false)
         )
-        .addStringOption((option) =>
-            option
-                .setName("series")
-                .setDescription("Character series (optional)")
-                .setRequired(false)
+        .addStringOption(option =>
+            option.setName("series").setDescription("Character series (optional)").setRequired(false)
         )
-        .addStringOption((option) =>
-            option
-                .setName("rarity")
-                .setDescription("Character rarity (optional)")
-                .setRequired(false)
+        .addStringOption(option =>
+            option.setName("rarity").setDescription("Character rarity (optional)").setRequired(false)
         ),
     name: "view",
     aliases: ["v"],
-    parseViewArgs,
 
     async execute(interaction) {
         const charname = interaction.options.getString("charname");
@@ -50,12 +30,7 @@ module.exports = {
         const series = interaction.options.getString("series");
         const rarity = interaction.options.getString("rarity");
 
-        await ReplyView(interaction, {
-            charname,
-            edition,
-            series,
-            rarity,
-        });
+        await ReplyView(interaction, { charname, edition, series, rarity });
     },
 
     async executeMessage(message, args) {
@@ -64,45 +39,34 @@ module.exports = {
     },
 };
 
+// ------------------------------ MAIN ------------------------------
+
 async function ReplyView(target, { charname, edition, series, rarity }) {
-    if (
-        (!charname || charname.trim() === "") &&
-        (!edition || edition.trim() === "") &&
-        (!series || series.trim() === "") &&
-        (!rarity || rarity.trim() === "")
-    ) {
-        return target.reply({
-            content: "Use `.help view` for more info",
-        });
+    if (!charname && !edition && !series && !rarity) {
+        return target.reply({ content: "Use `.help view` for more info" });
     }
 
     const chars = await GetCharacters(charname, edition, series, rarity);
 
-    if (chars.length == 0) {
-        return target.reply({
-            embeds: [GetFailedEmbed()],
-        });
+    if (chars.length === 0) {
+        return target.reply({ embeds: [GetFailedEmbed()] });
     } else {
         return SendMatchList(target, chars);
     }
 }
 
 function GetFailedEmbed() {
-    return new EmbedBuilder()
-        .setTitle("No Character Found")
-        .setColor("#f50000");
+    return new EmbedBuilder().setTitle("No Character Found").setColor("#f50000");
 }
 
 async function SendMatchList(target, charactersMatch) {
     const user = target.user || target.author;
     const embeds = await GetMatchListEmbeds(charactersMatch, user);
     let currentPage = 0;
+
     const reply = await target.reply({
         embeds: [embeds[currentPage]],
-        components:
-            embeds.length > 1
-                ? [GetPageButtons(true, embeds.length === 1, user)]
-                : [],
+        components: embeds.length > 1 ? [GetPageButtons(true, embeds.length === 1, user)] : [],
         fetchReply: true,
     });
 
@@ -111,31 +75,16 @@ async function SendMatchList(target, charactersMatch) {
 
         setTimeout(async () => {
             deletePagination(reply.id);
-
             try {
-                await reply.edit({
-                    components: [],
-                });
-            } catch (err) {}
+                await reply.edit({ components: [] });
+            } catch {}
         }, 120000);
     }
 }
 
 async function GetMatchListEmbeds(charactersMatch, user) {
-    const entries = await Promise.all(
-        charactersMatch.map(async (key) => {
-            const entry = await GetCharacter(key);
-            return entry;
-        })
-    );
-
-    const pages = [];
-
-    for (let i = 0; i < entries.length; i++) {
-        pages.push(GetCharacterEmbed(entries[i], user, i, entries.length));
-    }
-
-    return pages;
+    const entries = await Promise.all(charactersMatch.map(GetCharacter));
+    return entries.map((character, i) => GetCharacterEmbed(character, user, i, entries.length));
 }
 
 function GetCharacterEmbed(character, user, pageIndex, totalPages) {
@@ -145,43 +94,28 @@ function GetCharacterEmbed(character, user, pageIndex, totalPages) {
         .setThumbnail(rarityIcon.image)
         .setTitle("Character Info")
         .addFields(
-            {
-                name: "Character",
-                value: toCodeBlock(character.label),
-                inline: false,
-            },
-            {
-                name: "Series",
-                value: toCodeBlock(character.series),
-                inline: false,
-            },
-            {
-                name: "Edition",
-                value: toCodeBlock(character.edition),
-                inline: false,
-            }
+            { name: "Character", value: toCodeBlock(character.label), inline: false },
+            { name: "Series", value: toCodeBlock(character.series), inline: false },
+            { name: "Edition", value: toCodeBlock(character.edition), inline: false }
         )
         .setImage(character.image)
         .setColor(rarityIcon.color)
         .setFooter({ text: `Page ${pageIndex + 1} / ${totalPages}` });
 }
 
-function parseViewArgs(args) {
+// ------------------------------ ARG PARSER ------------------------------
+
+export function parseViewArgs(args) {
     let charnameParts = [];
     let edition = null;
     let series = null;
     let rarity = null;
 
     for (const part of args) {
-        if (part.startsWith("e:")) {
-            edition = part.slice(2);
-        } else if (part.startsWith("s:")) {
-            series = part.slice(2);
-        } else if (part.startsWith("r:")) {
-            rarity = part.slice(2);
-        } else {
-            charnameParts.push(part);
-        }
+        if (part.startsWith("e:")) edition = part.slice(2);
+        else if (part.startsWith("s:")) series = part.slice(2);
+        else if (part.startsWith("r:")) rarity = part.slice(2);
+        else charnameParts.push(part);
     }
 
     const charname = charnameParts.join(" ").trim() || null;

@@ -1,8 +1,17 @@
-const fs = require("node:fs");
-const path = require("node:path");
-const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
-const { clientId, token, prefix = "." } = require("./config.json");
-const { LoadCharacterData } = require("./utils/characterdata_handler");
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
+import { LoadCharacterData } from "./utils/characterdata_handler.js";
+
+// ESM replacement for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load JSON config
+const configPath = path.join(__dirname, "config.json");
+const rawData = fs.readFileSync(configPath, "utf-8");
+const { clientId, guildId, token, prefix = "." } = JSON.parse(rawData);
 
 // Create client
 const client = new Client({
@@ -36,15 +45,23 @@ const commandFiles = getFiles(path.join(__dirname, "interactive", "commands"));
 const slashCommandsJSON = [];
 
 for (const file of commandFiles) {
-    const command = require(file);
+    const commandURL = pathToFileURL(file).href;
+    const importedModule = await import(commandURL);
+    const command = importedModule.default || importedModule;
+    if (!command || !command.name) continue;
+
     if (command.name) {
-        client.commands.set(command.name, command);
+        client.commands.set(command.name, {
+            ...importedModule,
+            default: command, // default handler
+        });
         if (command.aliases && Array.isArray(command.aliases)) {
             for (const alias of command.aliases) {
                 client.commands.set(alias, command);
             }
         }
     }
+
     if (command.data) {
         slashCommandsJSON.push(command.data.toJSON());
     }
@@ -53,15 +70,31 @@ for (const file of commandFiles) {
 /* -------------------- Load Selects -------------------- */
 const selectFiles = getFiles(path.join(__dirname, "interactive", "selects"));
 for (const file of selectFiles) {
-    const select = require(file);
-    if (select.id) client.selects.set(select.id, select);
+    const selectURL = pathToFileURL(file).href;
+    const importedModule = await import(selectURL);
+    const select = importedModule.default || importedModule;
+    if (!select || !select.id) continue;
+
+    // Store all exports (default + named) together
+    client.selects.set(select.id, {
+        ...importedModule,
+        default: select, // default handler
+    });
 }
 
 /* -------------------- Load Buttons -------------------- */
 const buttonFiles = getFiles(path.join(__dirname, "interactive", "buttons"));
 for (const file of buttonFiles) {
-    const button = require(file);
-    if (button.id) client.buttons.set(button.id, button);
+    const buttonURL = pathToFileURL(file).href;
+    const importedModule = await import(buttonURL);
+    const button = importedModule.default || importedModule;
+    if (!button || !button.id) continue;
+
+    // Store all exports (default + named) together
+    client.buttons.set(button.id, {
+        ...importedModule,
+        default: button, // default handler
+    });
 }
 
 /* -------------------- Deploy Slash Commands -------------------- */
@@ -82,8 +115,12 @@ async function deploySlashCommands() {
 const eventFiles = fs
     .readdirSync(path.join(__dirname, "events"))
     .filter((file) => file.endsWith(".js"));
+
 for (const file of eventFiles) {
-    const event = require(path.join(__dirname, "events", file));
+    const eventURL = pathToFileURL(path.join(__dirname, "events", file)).href;
+    const { default: event } = await import(eventURL);
+    if (!event) continue;
+
     if (event.once) {
         client.once(event.name, (...args) => event.execute(client, ...args));
     } else {

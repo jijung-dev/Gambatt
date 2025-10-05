@@ -1,4 +1,6 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+
+// -------------------- BUTTON BUILDERS --------------------
 
 function GetPrevButton(disabled = false, user) {
     return new ButtonBuilder()
@@ -16,11 +18,26 @@ function GetNextButton(disabled = false, user) {
         .setDisabled(disabled);
 }
 
-function GetPageButtons(isFirstPage, isLastPage, user) {
-    return new ActionRowBuilder().addComponents(
+function GetSkipButton(user) {
+    return new ButtonBuilder()
+        .setCustomId(`skip_roll|${user.id}`)
+        .setLabel("⏭️ Skip")
+        .setStyle(ButtonStyle.Secondary);
+}
+
+function GetPageButtons(isFirstPage, isLastPage, user, hasFinal = false) {
+    const row = new ActionRowBuilder().addComponents(
         GetPrevButton(isFirstPage, user),
         GetNextButton(isLastPage, user)
     );
+
+    if (hasFinal) {
+        row.addComponents(GetSkipButton(user));
+    }
+
+    return row;
 }
 
-module.exports = { GetPrevButton, GetNextButton, GetPageButtons };
+// -------------------- EXPORTS --------------------
+
+export { GetPrevButton, GetNextButton, GetSkipButton, GetPageButtons };

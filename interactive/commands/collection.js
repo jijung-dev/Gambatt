@@ -1,21 +1,19 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const { rarityIcons } = require("../../utils/data_handler.js");
-
-const {
+import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import { rarityIcons } from "../../utils/data_handler.js";
+import {
     setPagination,
     deletePagination,
-} = require("../../utils/PaginationStore.js");
-const { GetCharacter } = require("../../utils/characterdata_handler.js");
-
-const { GetPageButtons } = require("../../utils/PaginationButtons.js");
-const { parseViewArgs } = require("./view.js");
-const {
+} from "../../utils/PaginationStore.js";
+import { GetCharacter } from "../../utils/characterdata_handler.js";
+import { GetPageButtons } from "../../utils/PaginationButtons.js";
+import { parseViewArgs } from "./view.js";
+import {
     GetCharactersFromCollection,
     GetCharacterFromCollection,
-} = require("../../utils/userdata_handler.js");
-const { toCodeBlock, renderXpBarEmoji } = require("../../utils/data_utils.js");
+} from "../../utils/userdata_handler.js";
+import { toCodeBlock, renderXpBarEmoji } from "../../utils/data_utils.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName("collection")
         .setDescription("View characters that you owned")
@@ -66,6 +64,7 @@ module.exports = {
     },
 };
 
+// -------------------- Helpers --------------------
 async function ReplyCollection(target, { charname, edition, series, rarity }) {
     const user = target.user || target.author;
     const chars = await GetCharactersFromCollection(
@@ -76,10 +75,8 @@ async function ReplyCollection(target, { charname, edition, series, rarity }) {
         rarity
     );
 
-    if (chars.length == 0) {
-        return target.reply({
-            embeds: [GetFailedEmbed()],
-        });
+    if (chars.length === 0) {
+        return target.reply({ embeds: [GetFailedEmbed()] });
     } else {
         return SendMatchList(target, chars);
     }
@@ -96,6 +93,7 @@ async function SendMatchList(target, charactersMatch) {
     const user = target.user || target.author;
     const embeds = await GetMatchListEmbeds(charactersMatch, user);
     let currentPage = 0;
+
     const reply = await target.reply({
         embeds: [embeds[currentPage]],
         components:
@@ -110,11 +108,8 @@ async function SendMatchList(target, charactersMatch) {
 
         setTimeout(async () => {
             deletePagination(reply.id);
-
             try {
-                await reply.edit({
-                    components: [],
-                });
+                await reply.edit({ components: [] });
             } catch (err) {}
         }, 120000);
     }
@@ -128,14 +123,12 @@ async function GetMatchListEmbeds(charactersMatch, user) {
             return { character, level };
         })
     );
-    const pages = [];
 
-    for (let i = 0; i < entries.length; i++) {
-        pages.push(GetCharacterEmbed(entries[i], user, i, entries.length));
-    }
-
-    return pages;
+    return entries.map((entry, i) =>
+        GetCharacterEmbed(entry, user, i, entries.length)
+    );
 }
+
 function GetCharacterEmbed(characterObject, user, pageIndex, totalPages) {
     const character = characterObject.character;
     const rarityIcon = rarityIcons[character.rarity];
@@ -143,7 +136,7 @@ function GetCharacterEmbed(characterObject, user, pageIndex, totalPages) {
     return new EmbedBuilder()
         .setThumbnail(rarityIcon.image)
         .setAuthor({
-            name: `${user.username}\'s collection`,
+            name: `${user.username}'s collection`,
             iconURL: user.displayAvatarURL(),
         })
         .addFields(

@@ -1,23 +1,28 @@
-const { GetPrefix } = require("../utils/data_handler");
+import { GetPrefix } from "../utils/data_handler.js";
 
-module.exports = {
+export default {
     name: "messageCreate",
     async execute(client, message) {
+        // ignore bots
+        if (message.author.bot) return;
+
         const prefix = await GetPrefix(message.guild.id);
 
-        if (message.author.bot) return;
+        // ignore if it doesn’t start with prefix
         if (!message.content.startsWith(prefix)) return;
 
+        // parse command + args
         const args = message.content.slice(prefix.length).trim().split(/ +/);
-        const commandName = args.shift().toLowerCase();
-        const command = client.commands.get(commandName);
+        const commandName = args.shift()?.toLowerCase();
+        const command = client.commands.get(commandName);        
 
+        // run prefix command
         if (command?.executeMessage) {
             try {
                 await command.executeMessage(message, args);
             } catch (error) {
                 console.error(error);
-                message.reply("❌ Error executing prefix command.");
+                await message.reply("❌ Error executing prefix command.");
             }
         }
     },

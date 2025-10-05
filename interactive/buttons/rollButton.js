@@ -1,15 +1,15 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const { ReplyRoll } = require("../commands/roll.js");
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+import { ReplyRoll } from "../commands/roll.js";
 
-module.exports = {
+export default {
     id: "roll",
-    GetRoll,
 
     async execute(interaction, client) {
         await ReplyRoll(interaction);
     },
 };
-function GetRoll(userId) {
+
+export function GetRoll(userId) {
     return new ButtonBuilder()
         .setCustomId(`roll|${userId}`)
         .setLabel("Roll")

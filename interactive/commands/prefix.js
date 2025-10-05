@@ -1,7 +1,7 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
-const { SetPrefix } = require("../../utils/data_handler");
+import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
+import { SetPrefix } from "../../utils/data_handler.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName("prefix")
         .setDescription("Change the bot prefix")
@@ -16,9 +16,7 @@ module.exports = {
     aliases: [],
 
     async execute(interaction) {
-        if (
-            !interaction.memberPermissions.has(PermissionFlagsBits.ManageGuild)
-        ) {
+        if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageGuild)) {
             return interaction.reply(
                 "⛔ You don't have permission to change the prefix!"
             );
@@ -38,7 +36,7 @@ module.exports = {
         }
 
         const newPrefix = args?.[0];
-        if (!args[0]) return message.reply("❌ Please provide a new prefix!");
+        if (!newPrefix) return message.reply("❌ Please provide a new prefix!");
 
         SetPrefix(message.guild.id, newPrefix);
         await message.reply(`✅ Prefix changed to: \`${newPrefix}\``);

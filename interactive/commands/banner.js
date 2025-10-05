@@ -1,21 +1,17 @@
-const {
+import {
     SlashCommandBuilder,
     EmbedBuilder,
     ActionRowBuilder,
-} = require("discord.js");
-const {
-    rarityIcons,
-} = require("../../utils/data_handler");
-const { GetCharacter, GetBanner } = require("../../utils/characterdata_handler");
+} from "discord.js";
+import { rarityIcons } from "../../utils/data_handler.js";
+import { GetCharacter, GetBanner } from "../../utils/characterdata_handler.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName("banner")
         .setDescription("Current Weekly Banner"),
     name: "banner",
     aliases: ["b"],
-
-    GetBannerEmbed,
 
     async execute(interaction) {
         await ReplyBanner(interaction, interaction.client);
@@ -26,6 +22,7 @@ module.exports = {
     },
 };
 
+// -------------------- Helpers --------------------
 async function ReplyBanner(target, client) {
     const { GetRoll10 } = client.buttons.get("roll10");
     const { GetRoll } = client.buttons.get("roll");
@@ -47,7 +44,7 @@ async function ReplyBanner(target, client) {
     });
 }
 
-async function GetBannerEmbed(characterValue) {
+export async function GetBannerEmbed(characterValue) {
     const character = await GetCharacter(characterValue);
     const rarityIcon = rarityIcons[character.rarity];
 
@@ -57,11 +54,7 @@ async function GetBannerEmbed(characterValue) {
         .addFields(
             { name: "Character", value: character.label, inline: false },
             { name: "Series", value: character.series, inline: false },
-            {
-                name: "Edition",
-                value: character.edition,
-                inline: false,
-            }
+            { name: "Edition", value: character.edition, inline: false }
         )
         .setImage(character.image)
         .setColor(rarityIcon.color);

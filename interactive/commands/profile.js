@@ -1,6 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName("profile")
         .setDescription("Show user profile")
@@ -22,7 +22,7 @@ module.exports = {
         let user;
 
         if (!args?.[0]) {
-            user = message.author; 
+            user = message.author;
         } else {
             const id = args[0].replace(/[<@!>]/g, "");
             user = await message.client.users.fetch(id).catch(() => null);
@@ -35,6 +35,7 @@ module.exports = {
     },
 };
 
+// -------------------- Helpers --------------------
 async function ReplyProfile(target, user) {
     if (!user) {
         user = target.user || target.author;
@@ -42,7 +43,7 @@ async function ReplyProfile(target, user) {
     const embed2 = GetProfileEmbed(user);
     return target.reply({
         embeds: [embed2],
-        //TODO: Button to collection, inventory
+        // TODO: Button to collection, inventory
         // components: [
         //     new ActionRowBuilder().addComponents(select2),
         //     new ActionRowBuilder().addComponents(roll1, roll10),
@@ -51,23 +52,15 @@ async function ReplyProfile(target, user) {
 }
 
 function GetProfileEmbed(user) {
-    //const rarityIcon = rarityIcons[character.rarity];
-
-    return (
-        new EmbedBuilder()
-            .setAuthor({
-                name: "Profile",
-            })
-            .setTitle(user.username)
-            //TODO: Custom title
-            .setDescription("titletitle")
-            //TODO: Custom fav card command
-            .addFields({
-                name: "Top favorite card",
-                value: "card \ncard\ncard",
-                inline: false,
-            })
-            .setThumbnail(user.displayAvatarURL())
-            .setColor("#a700f5")
-    );
+    return new EmbedBuilder()
+        .setAuthor({ name: "Profile" })
+        .setTitle(user.username)
+        .setDescription("titletitle") // TODO: Custom title
+        .addFields({
+            name: "Top favorite card",
+            value: "card \ncard\ncard", // TODO: Custom fav card command
+            inline: false,
+        })
+        .setThumbnail(user.displayAvatarURL())
+        .setColor("#a700f5");
 }

@@ -1,8 +1,8 @@
-const { MessageFlags } = require("discord.js");
-const { GetPageButtons } = require("../../utils/PaginationButtons");
-const { getPagination } = require("../../utils/PaginationStore");
+import { MessageFlags } from "discord.js";
+import { GetPageButtons } from "../../utils/PaginationButtons.js";
+import { getPagination } from "../../utils/PaginationStore.js";
 
-module.exports = {
+export default {
     id: "prev_page",
 
     async execute(interaction) {
@@ -15,13 +15,15 @@ module.exports = {
         }
 
         pagination.currentPage = Math.max(0, pagination.currentPage - 1);
+
         await interaction.update({
             embeds: [pagination.embeds[pagination.currentPage]],
             components: [
                 GetPageButtons(
                     pagination.currentPage === 0,
                     pagination.currentPage === pagination.embeds.length - 1,
-                    interaction.user
+                    interaction.user,
+                    Boolean(pagination.finalEmbed)
                 ),
             ],
         });

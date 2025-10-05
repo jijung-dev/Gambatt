@@ -1,8 +1,8 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const { currencyIcon } = require("../../utils/data_handler");
-const { GetPlayerData } = require("../../utils/userdata_handler");
+import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import { currencyIcon } from "../../utils/data_handler.js";
+import { GetPlayerData } from "../../utils/userdata_handler.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName("balance")
         .setDescription("Show user profile")
@@ -52,7 +52,7 @@ async function GetBalanceEmbed(user) {
 
     return new EmbedBuilder()
         .setAuthor({
-            name: `${user.username}\'s balance`,
+            name: `${user.username}'s balance`,
             iconURL: user.displayAvatarURL(),
         })
         .setTitle(`${playerData.balance} ${currencyIcon.cube.emoji}`)

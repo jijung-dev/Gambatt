@@ -1,8 +1,9 @@
-const { Jsoning, MathOps } = require("jsoning");
-const dataTable = new Jsoning("../Gambatt/gamedata/data.json");
-const characterTable = new Jsoning("../Gambatt/gamedata/characterdata.json");
-const userTable = new Jsoning("../Gambatt/gamedata/userdata.json");
-const perserverTable = new Jsoning("../Gambatt/gamedata/perserverdata.json");
+import { Jsoning } from "jsoning";
+
+const dataTable = new Jsoning("./gamedata/data.json");
+const characterTable = new Jsoning("./gamedata/characterdata.json");
+const userTable = new Jsoning("./gamedata/userdata.json");
+const perserverTable = new Jsoning("./gamedata/perserverdata.json");
 
 const rarityIcons = {
     ssr: {
@@ -24,6 +25,7 @@ const rarityIcons = {
         color: "#64edff",
     },
 };
+
 const currencyIcon = {
     cube: {
         id: "1423067106441691146",
@@ -31,6 +33,8 @@ const currencyIcon = {
         emoji: "<:cube:1423067106441691146>",
     },
 };
+
+// -------------------- PREFIX --------------------
 
 async function SetPrefix(guildID, newPrefix) {
     const allPrefixes = (await perserverTable.get("prefix")) || {};
@@ -43,9 +47,4 @@ async function GetPrefix(guildID) {
     return allPrefixes[guildID] || ".";
 }
 
-module.exports = {
-    rarityIcons,
-    currencyIcon,
-    SetPrefix,
-    GetPrefix,
-};
+export { rarityIcons, currencyIcon, SetPrefix, GetPrefix };

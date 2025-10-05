@@ -1,10 +1,10 @@
-const { MessageFlags } = require("discord.js");
+import { MessageFlags } from "discord.js";
 
-module.exports = {
+export default {
     name: "interactionCreate",
     async execute(client, interaction) {
         try {
-            // 1. block interaction theft
+            // block interaction theft
             if (interaction.isButton() || interaction.isStringSelectMenu()) {
                 const [, originalUserId] = interaction.customId.split("|");
 
@@ -16,38 +16,32 @@ module.exports = {
                 }
             }
 
-            // 2. ensure player
-            if (!interaction.user?.bot) {
-                // let player = await GetPlayerData(interaction.user.id);
-                // if (!player) {
-                //     player = await StartPlayer(interaction.user.id);
-                // }
-            }
-
-            // 3. selects
+            // selects
             if (interaction.isStringSelectMenu()) {
                 let handler = client.selects?.get(interaction.customId);
                 if (!handler) {
-                    // fallback: match by prefix before "_"
                     const prefix = interaction.customId.split("|")[0];
                     handler = client.selects?.get(prefix);
                 }
-                if (handler) return handler.execute(interaction, client);
+                if (handler?.default?.execute) {
+                    return handler.default.execute(interaction, client);
+                }
             }
 
-            // 4. buttons
+            // buttons
             if (interaction.isButton()) {
                 let handler = client.buttons?.get(interaction.customId);
                 if (!handler) {
                     const prefix = interaction.customId.split("|")[0];
                     handler = client.buttons?.get(prefix);
                 }
-                if (handler) return handler.execute(interaction, client);
+                if (handler?.default?.execute) {
+                    return handler.default.execute(interaction, client);
+                }
             }
 
-            // 5. slash commands
+            // slash commands
             if (!interaction.isChatInputCommand()) return;
-
             const command = client.commands.get(interaction.commandName);
             if (!command) {
                 console.error(
@@ -55,10 +49,9 @@ module.exports = {
                 );
                 return;
             }
+            await command.default.execute(interaction);
 
-            await command.execute(interaction);
-
-            // 6. timeout disable
+            // timeout disable
             setTimeout(async () => {
                 try {
                     const msg = await interaction.fetchReply();
@@ -79,13 +72,10 @@ module.exports = {
             }, 120000);
         } catch (error) {
             console.error(error);
-
-            // 7. error response
             const replyPayload = {
                 content: "There was an error while executing this command!",
                 flags: MessageFlags.Ephemeral,
             };
-
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp(replyPayload);
             } else {

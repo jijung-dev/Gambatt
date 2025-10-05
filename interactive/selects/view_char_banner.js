@@ -1,41 +1,34 @@
-const { ActionRowBuilder, StringSelectMenuBuilder } = require("discord.js");
-const {
-    rarityIcons,
-} = require("../../utils/data_handler");
-const { GetCharacter, GetBanner } = require("../../utils/characterdata_handler");
+import { ActionRowBuilder, StringSelectMenuBuilder } from "discord.js";
+import { rarityIcons } from "../../utils/data_handler.js";
+import { GetCharacter, GetBanner } from "../../utils/characterdata_handler.js";
 
-module.exports = {
+export default {
     id: "view_char_banner",
-    ViewCharacterBanner,
 
     async execute(interaction, client) {
         const bannerCommand = client.commands.get("banner");
-        if (!bannerCommand) return;
 
-        const { GetBannerEmbed } = bannerCommand;
-        const embed2 = await GetBannerEmbed(interaction.values[0]);
+        const embed = await bannerCommand.GetBannerEmbed(interaction.values[0]);
 
         await interaction.update({
-            embeds: [embed2],
+            embeds: [embed],
             components: interaction.message.components,
         });
     },
 };
 
-async function ViewCharacterBanner(userId) {
+export async function ViewCharacterBanner(userId) {
     const banner = await GetBanner();
 
-    const characters = [];
-    for (const charValue of banner.current_characters) {
-        const character = await GetCharacter(charValue);
-        characters.push(character);
-    }
+    const characters = await Promise.all(
+        banner.current_characters.map(GetCharacter)
+    );
 
     return new StringSelectMenuBuilder()
         .setCustomId(`view_char_banner|${userId}`)
         .setPlaceholder("View other character in the banner")
         .addOptions(
-            characters.map((c) => ({
+            characters.map(c => ({
                 label: c.label,
                 value: c.value,
                 emoji: { id: rarityIcons[c.rarity].id },

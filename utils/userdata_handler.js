@@ -1,9 +1,12 @@
-const { Jsoning, MathOps } = require("jsoning");
-const { filterCharacters, GetCharacter } = require("./characterdata_handler");
-const dataTable = new Jsoning("../Gambatt/gamedata/data.json");
-const characterTable = new Jsoning("../Gambatt/gamedata/characterdata.json");
-const userTable = new Jsoning("../Gambatt/gamedata/userdata.json");
-const perserverTable = new Jsoning("../Gambatt/gamedata/perserverdata.json");
+import { Jsoning } from "jsoning";
+import { filterCharacters, GetCharacter } from "./characterdata_handler.js";
+
+const dataTable = new Jsoning("./gamedata/data.json");
+const characterTable = new Jsoning("./gamedata/characterdata.json");
+const userTable = new Jsoning("./gamedata/userdata.json");
+const perserverTable = new Jsoning("./gamedata/perserverdata.json");
+
+// -------------------- CLASSES --------------------
 
 class Player {
     constructor(balance = 0, collection = {}, inventory = {}) {
@@ -12,6 +15,7 @@ class Player {
         this.inventory = inventory;
     }
 }
+
 class Item {
     constructor(value = "", count = 0) {
         this.value = value;
@@ -19,11 +23,12 @@ class Item {
     }
 }
 
+// -------------------- PLAYER DATA --------------------
+
 async function GetPlayerData(user) {
     if (user.bot) return null;
 
     let player = await userTable.get(user.id);
-
     if (!player) {
         player = await StartPlayer(user);
     }
@@ -37,11 +42,15 @@ async function StartPlayer(user) {
     return newPlayer;
 }
 
+// -------------------- BALANCE --------------------
+
 async function ReduceBalance(user, amount) {
     const player = await GetPlayerData(user);
     player.balance -= amount;
     await userTable.set(user.id, player);
 }
+
+// -------------------- COLLECTION --------------------
 
 async function AddCharacterToCollection(user, characterValue, rarity) {
     const player = await GetPlayerData(user);
@@ -52,32 +61,36 @@ async function AddCharacterToCollection(user, characterValue, rarity) {
     let character = player.collection[characterValue];
 
     if (!character) {
+        // First time acquiring
         character = {
             level: rarityValue.level,
             xp_now: rarityValue.xp_on_start,
             xp_max: rarityValue.xp_max,
         };
-
         player.collection[characterValue] = character;
         isFirstTime = true;
     } else {
+        // Duplicate: add XP
         character.xp_now += rarityValue.addValue;
 
+        // Level up if XP exceeds max
         if (character.xp_now >= character.xp_max) {
             isLevelUp = true;
             character.level++;
             character.xp_now -= character.xp_max;
-            if (rarity.toLowerCase() === "r" && character.level == 2) {
-                character.xp_max += 50;
-            } else {
-                character.xp_max += 100;
-            }
+            // Increase XP cap depending on rarity
+            character.xp_max +=
+                rarity.toLowerCase() === "r" && character.level === 2
+                    ? 50
+                    : 100;
         }
     }
 
     await userTable.set(user.id, player);
     return { isFirstTime, isLevelUp, character };
 }
+
+// -------------------- RARITY INFO --------------------
 
 function GetRarityValue(rarity) {
     switch (rarity.toLowerCase()) {
@@ -92,13 +105,14 @@ function GetRarityValue(rarity) {
     }
 }
 
+// -------------------- COLLECTION QUERIES --------------------
+
 async function GetCharacterFromCollection(user, characterValue) {
     const character = (await GetPlayerData(user)).collection[characterValue];
-    if (!character) {
+    if (!character)
         throw new Error(
-            `Character named: ${characterValue} does not exist in collection`
+            `Character ${characterValue} does not exist in collection`
         );
-    }
     return character;
 }
 
@@ -122,7 +136,9 @@ async function GetCharactersFromCollection(
     );
 }
 
-module.exports = {
+// -------------------- EXPORTS --------------------
+
+export {
     Player,
     ReduceBalance,
     GetRarityValue,

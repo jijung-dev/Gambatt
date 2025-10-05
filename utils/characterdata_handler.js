@@ -1,8 +1,9 @@
-const { Jsoning, MathOps } = require("jsoning");
-const dataTable = new Jsoning("../Gambatt/gamedata/data.json");
-const characterTable = new Jsoning("../Gambatt/gamedata/characterdata.json");
-const userTable = new Jsoning("../Gambatt/gamedata/userdata.json");
-const perserverTable = new Jsoning("../Gambatt/gamedata/perserverdata.json");
+import { Jsoning } from "jsoning";
+
+const dataTable = new Jsoning("./gamedata/data.json");
+const characterTable = new Jsoning("./gamedata/characterdata.json");
+const userTable = new Jsoning("./gamedata/userdata.json");
+const perserverTable = new Jsoning("./gamedata/perserverdata.json");
 
 class Character {
     constructor(
@@ -21,6 +22,7 @@ class Character {
         this.edition = edition;
     }
 }
+
 let cachedCharacters = null;
 
 async function LoadCharacterData() {
@@ -35,17 +37,20 @@ async function LoadCharacterData() {
     return cachedCharacters;
 }
 
+/**
+ * @returns {string} return an array of strings 
+ */
 async function GetCharacters(
     charName,
     edition = null,
     series = null,
     rarity = null
 ) {
-    const character_data = await LoadCharacterData();
-    const keys = Object.keys(character_data);
+    const characterData = await LoadCharacterData();
+    const keys = Object.keys(characterData);
 
     return filterCharacters(
-        (key) => character_data[key], // already loaded
+        (key) => characterData[key], // already loaded
         keys,
         charName,
         edition,
@@ -54,22 +59,31 @@ async function GetCharacters(
     );
 }
 
+/**
+ * @returns {Character} return the character object 
+ */
 async function GetCharacter(characterValue) {
-    const character_data = await cachedCharacters[characterValue];
+    if (!cachedCharacters) await LoadCharacterData();
 
-    if (!character_data) {
+    const characterData = cachedCharacters[characterValue];
+    if (!characterData) {
         throw new Error(`Character named: ${characterValue} does not exist`);
     }
 
     return new Character(
         characterValue,
-        character_data.label,
-        character_data.series,
-        character_data.rarity,
-        character_data.image,
-        character_data.edition
+        characterData.label,
+        characterData.series,
+        characterData.rarity,
+        characterData.image,
+        characterData.edition
     );
 }
+
+/**
+ * Filter characters
+ * @returns {string} return an array of strings 
+ */
 async function filterCharacters(
     getEntry,
     keys,
@@ -84,10 +98,8 @@ async function filterCharacters(
     const rarityLower = rarity?.toLowerCase() || null;
 
     const results = [];
-
     for (const key of keys) {
-        const entry = await getEntry(key); // supports sync or async entry fetch
-
+        const entry = await getEntry(key); // supports sync or async fetch
         if (
             matchCharacter(
                 entry,
@@ -100,9 +112,9 @@ async function filterCharacters(
             results.push(key);
         }
     }
-
     return results;
 }
+
 function matchCharacter(
     entry,
     nameLower,
@@ -126,17 +138,18 @@ class Banner {
     }
 }
 
+/**
+ * @returns {Banner} return a banner object
+ */
 async function GetBanner() {
-    const banner_data = await dataTable.get("banner");
-
-    if (!banner_data || !banner_data.current_characters) {
-        throw new Error(`No banner found`);
+    const bannerData = await dataTable.get("banner");
+    if (!bannerData?.current_characters) {
+        throw new Error("No banner found");
     }
-
-    return new Banner(banner_data.current_characters);
+    return new Banner(bannerData.current_characters);
 }
 
-module.exports = {
+export {
     Character,
     LoadCharacterData,
     GetCharacter,
