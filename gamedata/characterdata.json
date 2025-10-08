@@ -20,6 +20,20 @@
         "image": "https://images-ext-1.discordapp.net/external/ZSB05k4---zBZo-rReMkgyCUbFmAfoHbtGYfMdJwnkY/https/d19hynkch8r3hi.cloudfront.net/base-card-images/love%252C-chunibyo-%2526-other-delusions%21-lite/rikka-takanashi-1.png?format=webp&quality=lossless&width=474&height=656",
         "edition": "Normal"
     },
+    "kikirara_vivi_sleep": {
+        "label": "Kikirara Vivi",
+        "series": "Hololive",
+        "rarity": "ssr",
+        "image": "https://cdn.discordapp.com/attachments/1409990076397650000/1424669759743459388/20251006_150845.jpg?ex=68e4ca9b&is=68e3791b&hm=09d5644fc181d830b28875c3136b247b04931282eab6700b2c231ea9b01e1175?format=webp&quality=lossless&width=474&height=656",
+        "edition": "Sleeping Party"
+    },
+    "raora_panthera_summer": {
+        "label": "Raora Panthera",
+        "series": "Hololive EN",
+        "rarity": "ssr",
+        "image": "https://images-ext-1.discordapp.net/external/j_M4M_UgK7o8jniuFswO2VQ5I5QDoF_BFGM2q4ZcPKQ/https/d19hynkch8r3hi.cloudfront.net/base-card-images/hololive-en/raora-panthera-summer_2025.png?format=webp&quality=lossless&width=474&height=656",
+        "edition": "Summer"
+    },
     "megumin_winter": {
         "label": "Megumin",
         "series": "KonoSuba",
@@ -31,7 +45,14 @@
         "label": "tester",
         "series": "lmao",
         "rarity": "r",
-        "image": "https://images-ext-1.discordapp.net/external/Q7QlrR_k1iM8o6Dkr1RgLr2bBvM0UdihcvLA5kiGzEE/https/d19hynkch8r3hi.cloudfront.net/base-card-images/love%252C-chunibyo-%2526-other-delusions%21-lite/rikka-takanashi-summer_2023.png?format=webp&quality=lossless&width=474&height=656",
+        "image": "https://media.discordapp.net/attachments/1421937474262798498/1424672944361046117/test.png?ex=68e4cd93&is=68e37c13&hm=564ca7b8c9aced6deb19d132ff3bc63ae36777bda888d047cd208ff7d9808716&=&format=webp&quality=lossless",
+        "edition": "Normal"
+    },
+    "sakura_miko": {
+        "label": "Sakura Miko",
+        "series": "Hololive",
+        "rarity": "sr",
+        "image": "https://images-ext-1.discordapp.net/external/wW8wBz_09C4UO04dfkEKXxP_DkYvPv2ewGbkrRQmb40/https/d19hynkch8r3hi.cloudfront.net/base-card-images/hololive/sakura-miko-1.png?format=webp&quality=lossless&width=474&height=656",
         "edition": "Normal"
     }
 }

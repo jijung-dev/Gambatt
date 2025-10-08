@@ -1,9 +1,4 @@
-import { Jsoning } from "jsoning";
-
-const dataTable = new Jsoning("./gamedata/data.json");
-const characterTable = new Jsoning("./gamedata/characterdata.json");
-const userTable = new Jsoning("./gamedata/userdata.json");
-const perserverTable = new Jsoning("./gamedata/perserverdata.json");
+import { db } from "../gamedata/database.js";
 
 class Character {
     constructor(
@@ -23,68 +18,149 @@ class Character {
     }
 }
 
-let cachedCharacters = null;
-
-async function LoadCharacterData() {
-    if (!cachedCharacters) {
-        cachedCharacters = await characterTable.all(); // load once
-        console.log(
-            "[Character Cache] Loaded",
-            Object.keys(cachedCharacters).length,
-            "characters."
-        );
+class Banner {
+    constructor(current_characters = []) {
+        this.current_characters = current_characters;
     }
-    return cachedCharacters;
 }
 
-/**
- * @returns {string} return an array of strings 
- */
-async function GetCharacters(
-    charName,
+// -------------------- CHARACTER MANIPULATION --------------------
+export async function AddCharacter({
+    value,
+    label,
+    series,
+    rarity,
+    image,
+    edition,
+}) {
+    await db.run(
+        `INSERT OR REPLACE INTO characters (value, label, series, rarity, image, edition)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        value,
+        label,
+        series,
+        rarity,
+        image,
+        edition
+    );
+    console.log(`[DB] Added or updated character: ${label}`);
+}
+
+export async function EditCharacter(value, updates = {}) {
+    const fields = Object.keys(updates);
+    if (fields.length === 0) {
+        console.warn(`[DB] No fields provided to edit for ${value}`);
+        return;
+    }
+
+    const setClause = fields.map((f) => `${f} = ?`).join(", ");
+    const params = [...fields.map((f) => updates[f]), value];
+    const result = await db.run(
+        `UPDATE characters SET ${setClause} WHERE value = ?`,
+        ...params
+    );
+
+    if (result.changes > 0) {
+        console.log(`[DB] Edited character: ${value}`);
+    } else {
+        console.warn(`[DB] No character found with value: ${value}`);
+    }
+}
+
+export async function RemoveCharacter(value) {
+    // Delete from characters table
+    const result = await db.run(
+        `DELETE FROM characters WHERE value = ?`,
+        value
+    );
+
+    if (result.changes > 0) {
+        console.log(`[DB] Removed character: ${value}`);
+
+        // Remove from every user's collection
+        const users = await db.all("SELECT id, collection FROM users");
+        let affectedCount = 0;
+
+        for (const user of users) {
+            const collection = JSON.parse(user.collection || "{}");
+            if (collection[value]) {
+                delete collection[value];
+                await db.run(
+                    "UPDATE users SET collection = ? WHERE id = ?",
+                    JSON.stringify(collection),
+                    user.id
+                );
+                affectedCount++;
+            }
+        }
+
+        console.log(
+            `[DB] Removed character '${value}' from ${affectedCount} user(s).`
+        );
+    } else {
+        console.warn(`[DB] No character found to remove: ${value}`);
+    }
+}
+export async function HasCharacter(characterValue) {
+    const row = await db.get(
+        `SELECT 1 FROM characters WHERE value = ?`,
+        characterValue
+    );
+    return !!row; // true if character exists, false otherwise
+}
+
+// -------------------- GET CHARACTER --------------------
+export async function GetCharacter(characterValue) {
+    const row = await db.get(
+        `SELECT * FROM characters WHERE value = ?`,
+        characterValue
+    );
+    if (!row)
+        throw new Error(`Character named: ${characterValue} does not exist`);
+
+    return new Character(
+        row.value,
+        row.label,
+        row.series,
+        row.rarity,
+        row.image,
+        row.edition
+    );
+}
+
+// -------------------- GET MULTIPLE CHARACTERS --------------------
+export async function GetCharacters(
+    charName = null,
     edition = null,
     series = null,
     rarity = null
 ) {
-    const characterData = await LoadCharacterData();
-    const keys = Object.keys(characterData);
+    let query = `SELECT * FROM characters WHERE 1=1`;
+    const params = [];
 
-    return filterCharacters(
-        (key) => characterData[key], // already loaded
-        keys,
-        charName,
-        edition,
-        series,
-        rarity
-    );
-}
-
-/**
- * @returns {Character} return the character object 
- */
-async function GetCharacter(characterValue) {
-    if (!cachedCharacters) await LoadCharacterData();
-
-    const characterData = cachedCharacters[characterValue];
-    if (!characterData) {
-        throw new Error(`Character named: ${characterValue} does not exist`);
+    if (charName) {
+        query += ` AND LOWER(label) LIKE ?`;
+        params.push(`%${charName.toLowerCase()}%`);
+    }
+    if (edition) {
+        query += ` AND LOWER(edition) = ?`;
+        params.push(edition.toLowerCase());
+    }
+    if (series) {
+        query += ` AND LOWER(series) LIKE ?`;
+        params.push(`%${series.toLowerCase()}%`);
+    }
+    if (rarity) {
+        query += ` AND LOWER(rarity) = ?`;
+        params.push(rarity.toLowerCase());
     }
 
-    return new Character(
-        characterValue,
-        characterData.label,
-        characterData.series,
-        characterData.rarity,
-        characterData.image,
-        characterData.edition
-    );
+    const rows = await db.all(query, ...params);
+    return rows.map((r) => r.value);
 }
 
-/**
- * Filter characters
- * @returns {string} return an array of strings 
- */
-async function filterCharacters(
+// -------------------- FILTER CHARACTERS --------------------
+export async function filterCharacters(
     getEntry,
     keys,
     charName,
@@ -99,7 +175,7 @@ async function filterCharacters(
 
     const results = [];
     for (const key of keys) {
-        const entry = await getEntry(key); // supports sync or async fetch
+        const entry = await getEntry(key);
         if (
             matchCharacter(
                 entry,
@@ -132,28 +208,22 @@ function matchCharacter(
     return true;
 }
 
-class Banner {
-    constructor(current_characters = []) {
-        this.current_characters = current_characters;
-    }
+// -------------------- BANNER FUNCTIONS --------------------
+export async function GetBanner() {
+    const row = await db.get(`SELECT value FROM data WHERE key = 'banner'`);
+    if (!row) throw new Error("No banner found");
+
+    const parsed = JSON.parse(row.value);
+    return new Banner(parsed.current_characters || []);
 }
 
-/**
- * @returns {Banner} return a banner object
- */
-async function GetBanner() {
-    const bannerData = await dataTable.get("banner");
-    if (!bannerData?.current_characters) {
-        throw new Error("No banner found");
-    }
-    return new Banner(bannerData.current_characters);
+export async function SetBanner(characters) {
+    const value = JSON.stringify({ current_characters: characters });
+    await db.run(
+        `INSERT OR REPLACE INTO data (key, value) VALUES ('banner', ?)`,
+        value
+    );
+    console.log(`[DB] Banner updated with ${characters.length} characters`);
 }
 
-export {
-    Character,
-    LoadCharacterData,
-    GetCharacter,
-    GetCharacters,
-    filterCharacters,
-    GetBanner,
-};
+export { Character, Banner };

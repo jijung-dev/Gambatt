@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
-import { LoadCharacterData } from "./utils/characterdata_handler.js";
+import { initDatabase } from "./gamedata/database.js";
 
 // ESM replacement for __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -131,6 +131,6 @@ for (const file of eventFiles) {
 /* -------------------- Startup -------------------- */
 (async () => {
     await deploySlashCommands();
-    await LoadCharacterData();
+    await initDatabase();
     client.login(token);
 })();

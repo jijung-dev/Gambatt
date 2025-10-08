@@ -37,18 +37,21 @@ export async function ReplyRoll(target) {
     const player = await getPlayerOrFail(target, user);
     if (!player) return;
 
-    const characterID = await RollCharacter().id;
+    const characterValue = await RollCharacter();
 
     const replyMessage = await target.reply({
         embeds: [
             new EmbedBuilder()
                 .setTitle("🎲 Roringgu...")
-                .setColor(COLOR_DEFAULT)
-                .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() }),
+                .setColor(rarityIcons[characterValue.rarity].color)
+                .setAuthor({
+                    name: user.username,
+                    iconURL: user.displayAvatarURL(),
+                }),
         ],
     });
 
-    const character = await GetCharacter(characterID);
+    const character = await GetCharacter(characterValue.id);
     await wait(200);
 
     const collection = await AddCharacterToCollection(
@@ -142,12 +145,12 @@ function getCharacterEmbed(user, character, status, collection, rarityValue) {
  * @returns {string} return picked character value
  */
 export async function RollCharacter() {
-    const rarity = weightedPick({ ssr: 3, sr: 18, r: 79 });
+    const rarity = weightedPick({ ssr: 2, sr: 19, r: 79 });
 
     const candidates = await GetCharacters(null, null, null, rarity);
-    const id = await weightedPickFromBanner(candidates, rarity);
+    const id = await weightedPickFromArray(candidates, rarity);
 
-    return {id, rarity};
+    return { id, rarity };
 }
 
 function weightedPick(weightMap) {
@@ -159,37 +162,42 @@ function weightedPick(weightMap) {
         roll -= weight;
     }
 }
-
-async function weightedPickFromBanner(items, rarity) {
-    const { current_characters } = await GetBanner();
-    const featured = items.filter((id) => current_characters.includes(id));
-    const nonFeatured = items.filter((id) => !current_characters.includes(id));
-
-    const weights = {};
-
-    if (rarity === "ssr") {
-        const featuredRate = 0.75;
-        featured.forEach((id) => (weights[id] = featuredRate));
-
-        const leftover = 3 - featuredRate * featured.length;
-        const perNonFeatured =
-            nonFeatured.length > 0 ? leftover / nonFeatured.length : 0;
-        nonFeatured.forEach((id) => (weights[id] = perNonFeatured));
-    } else if (rarity === "sr") {
-        const featuredRate = 3;
-        featured.forEach((id) => (weights[id] = featuredRate));
-
-        const leftover = 18 - featuredRate * featured.length;
-        const perNonFeatured =
-            nonFeatured.length > 0 ? leftover / nonFeatured.length : 0;
-        nonFeatured.forEach((id) => (weights[id] = perNonFeatured));
-    } else {
-        const perR = items.length > 0 ? 79 / items.length : 0;
-        items.forEach((id) => (weights[id] = perR));
-    }
-
-    return weightedPick(weights);
+async function weightedPickFromArray(items) {
+    if (!items || items.length === 0) return null;
+    const roll = Math.floor(Math.random() * items.length);
+    return items[roll];
 }
+
+// async function weightedPickFromBanner(items, rarity) {
+//     const { current_characters } = await GetBanner();
+//     const featured = items.filter((id) => current_characters.includes(id));
+//     const nonFeatured = items.filter((id) => !current_characters.includes(id));
+
+//     const weights = {};
+
+//     if (rarity === "ssr") {
+//         const featuredRate = 0.75;
+//         featured.forEach((id) => (weights[id] = featuredRate));
+
+//         const leftover = 3 - featuredRate * featured.length;
+//         const perNonFeatured =
+//             nonFeatured.length > 0 ? leftover / nonFeatured.length : 0;
+//         nonFeatured.forEach((id) => (weights[id] = perNonFeatured));
+//     } else if (rarity === "sr") {
+//         const featuredRate = 3;
+//         featured.forEach((id) => (weights[id] = featuredRate));
+
+//         const leftover = 18 - featuredRate * featured.length;
+//         const perNonFeatured =
+//             nonFeatured.length > 0 ? leftover / nonFeatured.length : 0;
+//         nonFeatured.forEach((id) => (weights[id] = perNonFeatured));
+//     } else {
+//         const perR = items.length > 0 ? 79 / items.length : 0;
+//         items.forEach((id) => (weights[id] = perR));
+//     }
+
+//     return weightedPick(weights);
+// }
 
 // =============================== UTIL ===============================
 

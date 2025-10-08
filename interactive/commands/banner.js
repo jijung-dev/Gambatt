@@ -14,15 +14,19 @@ export default {
     aliases: ["b"],
 
     async execute(interaction) {
-        await ReplyBanner(interaction, interaction.client);
+        await Reply(interaction, interaction.client);
     },
 
     async executeMessage(message, args) {
-        await ReplyBanner(message, message.client);
+        await Reply(message, message.client);
     },
 };
 
 // -------------------- Helpers --------------------
+async function Reply(target, client) {
+
+    return target.reply("No banner for now");
+}
 async function ReplyBanner(target, client) {
     const { GetRoll10 } = client.buttons.get("roll10");
     const { GetRoll } = client.buttons.get("roll");

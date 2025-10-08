@@ -2,7 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { rarityIcons, currencyIcon } from "../../utils/data_handler.js";
 import { RollCharacter } from "./roll.js";
 import {
-    AddCharacterToCollection,
+    AddCharactersToCollection,
     GetPlayerData,
     GetRarityValue,
     ReduceBalance,
@@ -54,7 +54,13 @@ export async function ReplyRoll10(target) {
         // 1. Balance check
         const player = await GetPlayerData(user);
         const totalCost = 160 * 10;
-        await checkBalanceAndPay(target, user, player, totalCost);
+        const canRoll = await checkBalanceAndPay(
+            target,
+            user,
+            player,
+            totalCost
+        );
+        if (!canRoll) return;
 
         // 2. Perform rolls
         const generatedObj = await performRolls();
@@ -100,11 +106,15 @@ export async function ReplyRoll10(target) {
 
 async function checkBalanceAndPay(target, user, player, totalCost) {
     if (player.balance < totalCost) {
-        throw await target.reply({
+        await safeReply(target, {
             embeds: [failedEmbed(user, player.balance, totalCost)],
+            ephemeral: true,
         });
+        return false; // indicate failure
     }
+
     await ReduceBalance(user, totalCost);
+    return true; // success
 }
 
 async function performRolls() {
@@ -157,16 +167,23 @@ async function animateRolls(replyMessage, generated, user) {
 }
 
 async function processResults(user, generated) {
-    const results = [];
-
+    // Map generated characters into { value, rarity } format
+    const toAdd = [];
     for (const char of generated) {
         const character = await GetCharacter(char.id);
-        const collection = await AddCharacterToCollection(
-            user,
-            character.value,
-            character.rarity
-        );
-        const rarityValue = GetRarityValue(character.rarity);
+        toAdd.push({ value: character.value, rarity: character.rarity });
+    }
+
+    // Add all characters in one batch
+    const collections = await AddCharactersToCollection(user, toAdd);
+
+    // Build results array for display
+    const results = [];
+    for (let i = 0; i < toAdd.length; i++) {
+        const { value, rarity } = toAdd[i];
+        const character = await GetCharacter(generated[i].id);
+        const collection = collections[i];
+        const rarityValue = GetRarityValue(rarity);
 
         const titleStatus = collection.isFirstTime
             ? "🆕 New!"

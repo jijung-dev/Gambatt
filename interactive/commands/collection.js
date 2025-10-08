@@ -65,8 +65,14 @@ export default {
 };
 
 // -------------------- Helpers --------------------
-async function ReplyCollection(target, { charname, edition, series, rarity }) {
-    const user = target.user || target.author;
+async function ReplyCollection(
+    target,
+    { charname, edition, series, rarity, mention }
+) {
+    const id = mention?.replace(/[<@!>]/g, "");
+    const metionUser = await target.client.users.fetch(id).catch(() => null);
+    const user = metionUser || target.user || target.author;
+
     const chars = await GetCharactersFromCollection(
         user,
         charname,
@@ -76,21 +82,24 @@ async function ReplyCollection(target, { charname, edition, series, rarity }) {
     );
 
     if (chars.length === 0) {
-        return target.reply({ embeds: [GetFailedEmbed()] });
+        return target.reply({ embeds: [GetFailedEmbed(user)] });
     } else {
-        return SendMatchList(target, chars);
+        return SendMatchList(target, chars, user);
     }
 }
 
-function GetFailedEmbed() {
+function GetFailedEmbed(user) {
     return new EmbedBuilder()
-        .setTitle("Collection")
+        .setAuthor({
+            name: `${user.username}'s collection`,
+            iconURL: user.displayAvatarURL(),
+        })
         .setDescription("Empty")
         .setColor("#858585");
 }
 
-async function SendMatchList(target, charactersMatch) {
-    const user = target.user || target.author;
+async function SendMatchList(target, charactersMatch, mentionUser) {
+    const user = mentionUser || target.user || target.author;
     const embeds = await GetMatchListEmbeds(charactersMatch, user);
     let currentPage = 0;
 
@@ -98,7 +107,13 @@ async function SendMatchList(target, charactersMatch) {
         embeds: [embeds[currentPage]],
         components:
             embeds.length > 1
-                ? [GetPageButtons(true, embeds.length === 1, user)]
+                ? [
+                      GetPageButtons(
+                          true,
+                          embeds.length === 1,
+                          target.user || target.author
+                      ),
+                  ]
                 : [],
         fetchReply: true,
     });
@@ -167,5 +182,5 @@ function GetCharacterEmbed(characterObject, user, pageIndex, totalPages) {
         )
         .setImage(character.image)
         .setColor(rarityIcon.color)
-        .setFooter({ text: `Page ${pageIndex + 1} / ${totalPages}` });
+        .setFooter({ text: `${character.value} - Page ${pageIndex + 1} / ${totalPages}` });
 }
