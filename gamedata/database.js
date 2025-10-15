@@ -2,6 +2,7 @@
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import { join } from "path";
+import { existsSync } from "fs";
 
 const dbPath = join(process.cwd(), "gamedata", "gamedata.db");
 export let db;
@@ -12,33 +13,13 @@ export async function initDatabase() {
         driver: sqlite3.Database,
     });
 
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            balance INTEGER,
-            collection TEXT,
-            inventory TEXT
-        )
-    `);
+    const isNewDB = !existsSync(dbPath);
 
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS characters (
-            value TEXT PRIMARY KEY,
-            label TEXT,
-            series TEXT,
-            rarity TEXT,
-            image TEXT,
-            edition TEXT
-        )
-    `);
-
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS data (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )
-    `);
-
-    console.log("✅ Database initialized at", dbPath);
-    console.log("   Tables: users, characters, data");
+    console.log(
+        isNewDB
+            ? "\n[DB] Creating new database..."
+            : "\n[DB] Using existing database"
+    );
+    console.log("[DB] Path:", dbPath);
+    console.log("[DB] Ready\n");
 }
