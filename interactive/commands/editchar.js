@@ -106,8 +106,9 @@ function GetFailedEmbed() {
     return new EmbedBuilder()
         .setTitle("❌ Missing arguments")
         .setDescription(
-            "Usage example:\n```\n$editchar c:ninomae_inanis n:Ninomae Ina'nis s:Hololive r:sr e:Normal l:image link\n```"
+            "$editchar c:ninomae_inanis <n:Ninomae Ina'nis> <s:Hololive> <r:sr> <e:Normal> <l:image link>```"
         )
+        .setFooter("Anything in <> is optional")
         .setColor("#f50000");
 }
 
@@ -143,6 +144,9 @@ function GetEditCharacterEmbed(character) {
         )
         .setThumbnail(rarityIcon.image)
         .setImage(character.image)
+        .setFooter({
+            text: `${character.value}`,
+        })
         .setColor(rarityIcon.color);
 }
 

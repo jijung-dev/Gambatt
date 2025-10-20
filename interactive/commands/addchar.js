@@ -67,7 +67,7 @@ export default {
 
     async executeMessage(message, args) {
         const characterValue = parseAddCharArgs(args);
-        
+
         await ReplyAddChar(message, characterValue);
     },
 };
@@ -87,6 +87,24 @@ async function ReplyAddChar(
         !image_link
     ) {
         return target.reply({ embeds: [GetFailedEmbed()] });
+    }
+
+    let hostname;
+    try {
+        hostname = new URL(image_link).hostname.toLowerCase();
+    } catch {
+        return target.reply({ embeds: [GetFailedEmbed()] });
+    }
+
+    const allowedDomains = ["imgur.com", "imgchest.com"];
+    const isValidImageLink = allowedDomains.some(
+        (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
+    );
+
+    if (!isValidImageLink) {
+        return target.reply({
+            embeds: [GetFailedEmbedNotAllowLink()],
+        });
     }
 
     const char = new Character(
@@ -113,7 +131,18 @@ async function ReplyAddChar(
 function GetFailedEmbed() {
     return new EmbedBuilder()
         .setTitle("❌ Missing arguments")
-        .setDescription("\`\`\`$addchar c:ninomae_inanis n:Ninomae Ina'nis s:Hololive r:sr e:Normal l:image link\`\`\`")
+        .setDescription(
+            "```$addchar c:ninomae_inanis n:Ninomae Ina'nis s:Hololive r:sr e:Normal l:image link```"
+        )
+        .setColor("#f50000");
+}
+
+function GetFailedEmbedNotAllowLink() {
+    return new EmbedBuilder()
+        .setTitle("❌ Not allowed link")
+        .setDescription(
+            "Only links from [Imgur](https://imgur.com/upload) or [Imgchest](https://imgchest.com/upload) are allowed."
+        )
         .setColor("#f50000");
 }
 
@@ -144,6 +173,9 @@ function GetCharacterEmbed(character) {
             }
         )
         .setImage(character.image)
+        .setFooter({
+            text: `${character.value}`,
+        })
         .setColor(rarityIcon.color);
 }
 

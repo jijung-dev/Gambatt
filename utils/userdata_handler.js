@@ -3,12 +3,11 @@ import { filterCharacters, GetCharacter } from "./characterdata_handler.js";
 
 // -------------------- CLASSES --------------------
 class Player {
-    constructor(balance = 0, collection = {}, inventory = {}) {
+    constructor(balance = 0) {
         this.balance = balance;
-        this.collection = collection;
-        this.inventory = inventory;
     }
 }
+
 class Channel {
     constructor({
         user_id,
@@ -42,12 +41,10 @@ class Channel {
         this.stamina_max = stamina_max;
         this.stamina_cost_per_hour = stamina_cost_per_hour;
 
-        // ensure gears is an object (DB returns a string for the JSON column)
         if (typeof gears === "string") {
             try {
                 this.gears = JSON.parse(gears);
-            } catch (e) {
-                // fallback to empty object or default template if parsing fails
+            } catch {
                 this.gears = {
                     cpu: null,
                     gpu: null,
@@ -56,7 +53,7 @@ class Channel {
                     keyboard: null,
                 };
             }
-        } else if (gears === null || gears === undefined) {
+        } else if (!gears) {
             this.gears = {
                 cpu: null,
                 gpu: null,
@@ -84,24 +81,7 @@ export async function GetPlayerData(user) {
     const row = await db.get("SELECT * FROM users WHERE id = ?", user.id);
     if (!row) return await StartPlayer(user);
 
-    // build collection from user_characters rows
-    const rows = await db.all(
-        `SELECT character_id, level, xp_now, xp_max FROM user_characters WHERE user_id = ?`,
-        user.id
-    );
-
-    const collection = {};
-    for (const r of rows) {
-        collection[r.character_id] = {
-            level: r.level,
-            xp_now: r.xp_now,
-            xp_max: r.xp_max,
-        };
-    }
-
-    const inventory = JSON.parse(row.inventory || "{}");
-
-    return new Player(row.balance, collection, inventory);
+    return new Player(row.balance);
 }
 
 export async function StartPlayer(user) {
@@ -109,10 +89,9 @@ export async function StartPlayer(user) {
 
     const newPlayer = new Player();
     await db.run(
-        "INSERT INTO users (id, balance, inventory) VALUES (?, ?, ?)",
+        "INSERT INTO users (id, balance) VALUES (?, ?)",
         user.id,
-        newPlayer.balance,
-        JSON.stringify(newPlayer.inventory)
+        newPlayer.balance
     );
     return newPlayer;
 }
@@ -123,12 +102,9 @@ export async function ReduceBalance(user, amount) {
     if (!player) return null;
 
     player.balance -= amount;
-
-    // update only balance and inventory (collection is in user_characters)
     await db.run(
-        "UPDATE users SET balance = ?, inventory = ? WHERE id = ?",
+        "UPDATE users SET balance = ? WHERE id = ?",
         player.balance,
-        JSON.stringify(player.inventory),
         user.id
     );
 
@@ -148,42 +124,17 @@ export function GetRarityValue(rarity) {
             return { addValue: 1, level: 1, xp_on_start: 1, xp_max: 1 };
     }
 }
+
 export function GetCharacterStat(character, level) {
-    switch (character.rarity) {
-        case "ssr":
-            return {
-                growth_rate: 3 * level,
-                mood_down_rate: 3 * level,
-                supa_rate: 3 * level,
-                stamina_max: 100,
-                stamina_cost_per_hour: 1,
-            };
-        case "sr":
-            return {
-                growth_rate: 3 * level,
-                mood_down_rate: 3 * level,
-                supa_rate: 3 * level,
-                stamina_max: 100,
-                stamina_cost_per_hour: 1,
-            };
-        case "r":
-            return {
-                growth_rate: 3 * level,
-                mood_down_rate: 3 * level,
-                supa_rate: 3 * level,
-                stamina_max: 100,
-                stamina_cost_per_hour: 1,
-            };
-        default:
-            return {
-                growth_rate: 3 * level,
-                mood_down_rate: 3 * level,
-                supa_rate: 3 * level,
-                stamina_max: 100,
-                stamina_cost_per_hour: 1,
-            };
-    }
+    return {
+        growth_rate: 3 * level,
+        mood_down_rate: 3 * level,
+        supa_rate: 3 * level,
+        stamina_max: 100,
+        stamina_cost_per_hour: 1,
+    };
 }
+
 export function GetCharacterMood(mood) {
     switch (mood) {
         case -2:
@@ -205,14 +156,9 @@ export function GetCharacterMood(mood) {
 export async function AddCharacterToCollection(user, characterValue, rarity) {
     if (user.bot) return null;
 
-    // Ensure player exists (creates user row if not present)
-    const player = await GetPlayerData(user);
-    if (!player) return null;
-
     const rarityValue = GetRarityValue(rarity);
 
-    // fetch existing character row
-    let charRow = await db.get(
+    const charRow = await db.get(
         `SELECT level, xp_now, xp_max FROM user_characters WHERE user_id = ? AND character_id = ?`,
         user.id,
         characterValue
@@ -223,12 +169,8 @@ export async function AddCharacterToCollection(user, characterValue, rarity) {
     let character;
 
     if (!charRow) {
-        // insert new character row
         isFirstTime = true;
-        const level = rarityValue.level;
-        const xp_now = rarityValue.xp_on_start;
-        const xp_max = rarityValue.xp_max;
-
+        const { level, xp_on_start: xp_now, xp_max } = rarityValue;
         await db.run(
             `INSERT INTO user_characters (user_id, character_id, level, xp_now, xp_max)
              VALUES (?, ?, ?, ?, ?)`,
@@ -238,162 +180,69 @@ export async function AddCharacterToCollection(user, characterValue, rarity) {
             xp_now,
             xp_max
         );
-
         character = { level, xp_now, xp_max };
     } else {
-        // update existing row
-        let level = charRow.level;
-        let xp_now = charRow.xp_now + rarityValue.addValue;
-        let xp_max = charRow.xp_max;
-
+        let { level, xp_now, xp_max } = charRow;
+        xp_now += rarityValue.addValue;
         if (xp_now >= xp_max) {
             isLevelUp = true;
             level++;
             xp_now -= xp_max;
             xp_max += rarity.toLowerCase() === "r" && level === 2 ? 50 : 100;
         }
-
         await db.run(
-            `UPDATE user_characters SET level = ?, xp_now = ?, xp_max = ?
-             WHERE user_id = ? AND character_id = ?`,
+            `UPDATE user_characters SET level = ?, xp_now = ?, xp_max = ? WHERE user_id = ? AND character_id = ?`,
             level,
             xp_now,
             xp_max,
             user.id,
             characterValue
         );
-
         character = { level, xp_now, xp_max };
     }
-
-    // Keep behavior: update user's balance & inventory in users table (collection is normalized now)
-    await db.run(
-        "UPDATE users SET balance = ?, inventory = ? WHERE id = ?",
-        player.balance,
-        JSON.stringify(player.inventory),
-        user.id
-    );
 
     return { isFirstTime, isLevelUp, character };
 }
 
 export async function AddCharactersToCollection(user, characters) {
     if (user.bot) return null;
-
-    const player = await GetPlayerData(user);
-    if (!player) return null;
-
     const results = [];
-
     for (const { value, rarity } of characters) {
-        const rarityValue = GetRarityValue(rarity);
-
-        let isFirstTime = false;
-        let isLevelUp = false;
-        let character;
-
-        const charRow = await db.get(
-            `SELECT level, xp_now, xp_max FROM user_characters WHERE user_id = ? AND character_id = ?`,
-            user.id,
-            value
-        );
-
-        if (!charRow) {
-            isFirstTime = true;
-            const level = rarityValue.level;
-            const xp_now = rarityValue.xp_on_start;
-            const xp_max = rarityValue.xp_max;
-
-            await db.run(
-                `INSERT INTO user_characters (user_id, character_id, level, xp_now, xp_max)
-                 VALUES (?, ?, ?, ?, ?)`,
-                user.id,
-                value,
-                level,
-                xp_now,
-                xp_max
-            );
-
-            character = { level, xp_now, xp_max };
-        } else {
-            let level = charRow.level;
-            let xp_now = charRow.xp_now + rarityValue.addValue;
-            let xp_max = charRow.xp_max;
-
-            if (xp_now >= xp_max) {
-                isLevelUp = true;
-                level++;
-                xp_now -= xp_max;
-                xp_max +=
-                    rarity.toLowerCase() === "r" && level === 2 ? 50 : 100;
-            }
-
-            await db.run(
-                `UPDATE user_characters SET level = ?, xp_now = ?, xp_max = ?
-                 WHERE user_id = ? AND character_id = ?`,
-                level,
-                xp_now,
-                xp_max,
-                user.id,
-                value
-            );
-
-            character = { level, xp_now, xp_max };
-        }
-
-        results.push({ isFirstTime, isLevelUp, character, rarity });
+        results.push(await AddCharacterToCollection(user, value, rarity));
     }
-
-    // update users balance & inventory JSON (collection now in user_characters)
-    await db.run(
-        "UPDATE users SET balance = ?, inventory = ? WHERE id = ?",
-        player.balance,
-        JSON.stringify(player.inventory),
-        user.id
-    );
-
     return results;
 }
 
-// -------------------- COLLECTION QUERIES --------------------
 export async function GetCharacterFromCollection(user, characterValue) {
     if (user.bot) return null;
-
     const row = await db.get(
         `SELECT level, xp_now, xp_max FROM user_characters WHERE user_id = ? AND character_id = ?`,
         user.id,
         characterValue
     );
-
-    if (!row) return { level: -1 };
-
-    return {
-        level: row.level,
-        xp_now: row.xp_now,
-        xp_max: row.xp_max,
-    };
+    return row
+        ? { level: row.level, xp_now: row.xp_now, xp_max: row.xp_max }
+        : { level: -1 };
 }
 
 export async function GetCharactersFromCollection(
     user,
+    value,
     charName,
     edition = null,
     series = null,
     rarity = null
 ) {
     if (user.bot) return [];
-
-    // get all character ids the user owns
     const rows = await db.all(
         `SELECT character_id FROM user_characters WHERE user_id = ?`,
         user.id
     );
     const keys = rows.map((r) => r.character_id);
-
-    // reuse filterCharacters; it expects a getEntry async function returning Character-like object
     return filterCharacters(
         (key) => GetCharacter(key),
         keys,
+        value,
         charName,
         edition,
         series,
@@ -423,10 +272,7 @@ export async function GetChannel(user, namePart) {
 
 export async function CreateChannel(user, channel) {
     if (user.bot) return null;
-
-    await GetPlayerData(user); // Ensure player exists
-
-    // ensure gears exists as an object
+    await GetPlayerData(user);
     const gearsObj = channel.gears || {
         cpu: null,
         gpu: null,
@@ -434,24 +280,10 @@ export async function CreateChannel(user, channel) {
         mouse: null,
         keyboard: null,
     };
-
     await db.run(
         `INSERT INTO channels (
-            user_id,
-            channel_name,
-            profile_picture,
-            banner_picture,
-            mood,
-            color,
-            character_id,
-            sub_count,
-            growth_rate,
-            mood_down_rate,
-            supa_rate,
-            stamina_current,
-            stamina_max,
-            stamina_cost_per_hour,
-            gears
+            user_id, channel_name, profile_picture, banner_picture, mood, color, character_id,
+            sub_count, growth_rate, mood_down_rate, supa_rate, stamina_current, stamina_max, stamina_cost_per_hour, gears
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         user.id,
         channel.channel_name,
@@ -473,44 +305,33 @@ export async function CreateChannel(user, channel) {
 
 export async function UpdateChannel(user, namePart, data) {
     if (user.bot) return null;
-
     const matches = await GetChannel(user, namePart);
     if (matches.length === 0) return null;
     if (matches.length > 1) return matches;
 
     const channel = matches[0];
-
-    const fields = [];
-    const values = [];
+    const fields = [],
+        values = [];
     for (const [key, value] of Object.entries(data)) {
-        if (key === "gears") {
-            fields.push(`${key} = ?`);
-            values.push(JSON.stringify(value));
-        } else {
-            fields.push(`${key} = ?`);
-            values.push(value);
-        }
+        fields.push(`${key} = ?`);
+        values.push(key === "gears" ? JSON.stringify(value) : value);
     }
 
-    // Save old and new names so we can re-fetch even if renamed
     const oldName = channel.channel_name;
     const newName = data.channel_name ?? oldName;
-
     values.push(user.id, oldName);
 
-    const result = await db.run(
+    await db.run(
         `UPDATE channels SET ${fields.join(
             ", "
         )} WHERE user_id = ? AND channel_name = ?`,
         ...values
     );
-
     const updatedRow = await db.get(
         `SELECT * FROM channels WHERE user_id = ? AND channel_name = ?`,
         user.id,
         newName
     );
-
     return updatedRow ? new Channel(updatedRow) : null;
 }
 
@@ -520,24 +341,17 @@ export async function DeleteChannel(
     { checkOnly = false } = {}
 ) {
     if (user.bot) return null;
-
     const matches = await GetChannel(user, namePart);
     if (matches.length === 0) return null;
-
-    if (checkOnly) {
-        return matches;
-    }
-
+    if (checkOnly) return matches;
     if (matches.length > 1) return matches;
 
     const channel = matches[0];
-
     await db.run(
         `DELETE FROM channels WHERE user_id = ? AND channel_name = ?`,
         user.id,
         channel.channel_name
     );
-
     return channel;
 }
 

@@ -41,11 +41,6 @@ export default {
 // ------------------------------ MAIN ------------------------------
 
 async function ReplyChannel(target, channame) {
-    // if (!channame) {
-    //     return target.reply({
-    //         content: "Use `.help viewchannel` for more info",
-    //     });
-    // }
 
     const user = target.user || target.author;
     let channels;
@@ -57,16 +52,20 @@ async function ReplyChannel(target, channame) {
     }
 
     if (!channels || channels.length === 0) {
-        return target.reply({ embeds: [GetFailedEmbed()] });
+        return target.reply({ embeds: [GetFailedEmbed(user)] });
     } else {
         return SendMatchList(user, target, channels);
     }
 }
 
-function GetFailedEmbed() {
+function GetFailedEmbed(user) {
     return new EmbedBuilder()
-        .setTitle("❌ No Channel Found")
-        .setColor("#f50000");
+        .setAuthor({
+            name: `${user.username}'s channels`,
+            iconURL: user.displayAvatarURL(),
+        })
+        .setDescription("Empty")
+        .setColor("#858585");
 }
 
 async function SendMatchList(user, target, channelsMatch) {

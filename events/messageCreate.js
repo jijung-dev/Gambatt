@@ -19,6 +19,14 @@ export default {
         // Fetch the command
         const command = client.commands.get(commandName);
 
+        // ✅ Disabled command check (alias-aware)
+        const mainCommandName = command?.default?.name || command?.name;
+        if (mainCommandName && client.disabledCommands?.has(mainCommandName)) {
+            return message.reply(
+                `❌ The command \`${mainCommandName}\` is not allowed right now.`
+            );
+        }
+
         // ✅ Auto-detect handler: supports wrapped or unwrapped
         const handler =
             command?.executeMessage ||          // normal

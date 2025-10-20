@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { currencyIcon } from "../../utils/data_handler.js";
 import { GetPlayerData } from "../../utils/userdata_handler.js";
+import { getUser } from "../../utils/data_utils.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -24,14 +25,7 @@ export default {
         let user;
 
         if (!args?.[0]) {
-            user = message.author;
-        } else {
-            const id = args[0].replace(/[<@!>]/g, "");
-            user = await message.client.users.fetch(id).catch(() => null);
-        }
-
-        if (!user) {
-            return message.reply("⚠️ Invalid user ID.");
+            user = await getUser(message, args[0]);
         }
         await ReplyBalance(message, user);
     },
@@ -39,7 +33,7 @@ export default {
 
 async function ReplyBalance(target, user) {
     if (!user) {
-        user = target.user || target.author;
+        return message.reply("⚠️ Invalid user ID.");
     }
     const embed2 = await GetBalanceEmbed(user);
     return target.reply({

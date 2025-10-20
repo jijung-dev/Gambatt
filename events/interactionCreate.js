@@ -42,11 +42,20 @@ export default {
 
             // slash commands
             if (!interaction.isChatInputCommand()) return;
-            const command = client.commands.get(interaction.commandName);
+
+            const commandName = interaction.commandName;
+
+            // ✅ Disabled command check
+            if (client.disabledCommands?.has(commandName)) {
+                return interaction.reply({
+                    content: `❌ The command \`${commandName}\` is not allowed right now.`,
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
+
+            const command = client.commands.get(commandName);
             if (!command) {
-                console.error(
-                    `No command matching ${interaction.commandName} was found.`
-                );
+                console.error(`No command matching ${commandName} was found.`);
                 return;
             }
             await command.default.execute(interaction);

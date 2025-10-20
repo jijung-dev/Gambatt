@@ -23,6 +23,12 @@ export default {
         )
         .addStringOption((option) =>
             option
+                .setName("charvalue")
+                .setDescription("Character value (optional)")
+                .setRequired(false)
+        )
+        .addStringOption((option) =>
+            option
                 .setName("edition")
                 .setDescription("Character edition (optional)")
                 .setRequired(false)
@@ -44,11 +50,18 @@ export default {
 
     async execute(interaction) {
         const charname = interaction.options.getString("charname");
+        const charvalue = interaction.options.getString("charvalue");
         const edition = interaction.options.getString("edition");
         const series = interaction.options.getString("series");
         const rarity = interaction.options.getString("rarity");
 
-        await ReplyView(interaction, { charname, edition, series, rarity });
+        await ReplyView(interaction, {
+            charvalue,
+            charname,
+            edition,
+            series,
+            rarity,
+        });
     },
 
     async executeMessage(message, args) {
@@ -59,12 +72,15 @@ export default {
 
 // ------------------------------ MAIN ------------------------------
 
-async function ReplyView(target, { charname, edition, series, rarity }) {
-    if (!charname && !edition && !series && !rarity) {
-        return target.reply({ content: "Use `.help view` for more info" });
+async function ReplyView(
+    target,
+    { charvalue, charname, edition, series, rarity }
+) {
+    if (!charvalue && !charname && !edition && !series && !rarity) {
+        return target.reply({ embeds: [GetFailedEmbed()] });
     }
 
-    const chars = await GetCharacters(charname, edition, series, rarity);
+    const chars = await GetCharacters(charvalue, charname, edition, series, rarity);
 
     if (chars.length === 0) {
         return target.reply({ embeds: [GetFailedEmbed()] });
@@ -75,7 +91,11 @@ async function ReplyView(target, { charname, edition, series, rarity }) {
 
 function GetFailedEmbed() {
     return new EmbedBuilder()
-        .setTitle("No Character Found")
+        .setTitle("❌ Missing arguments")
+        .setDescription(
+            "```$view Ninomae Ina'nis <s:Hololive> <r:sr> <e:Normal> <l:image link>```"
+        )
+        .setFooter("Anything in <> is optional")
         .setColor("#f50000");
 }
 
@@ -137,7 +157,9 @@ function GetCharacterEmbed(character, user, pageIndex, totalPages) {
         )
         .setImage(character.image)
         .setColor(rarityIcon.color)
-        .setFooter({ text: `${character.value} - Page ${pageIndex + 1} / ${totalPages}` });
+        .setFooter({
+            text: `${character.value} - Page ${pageIndex + 1} / ${totalPages}`,
+        });
 }
 
 // ------------------------------ ARG PARSER ------------------------------
@@ -147,7 +169,8 @@ export function parseViewArgs(args) {
     let editionParts = [];
     let seriesParts = [];
     let rarity = null;
-    let mention = null;
+    let charvalue = null;
+    let metion = null;
 
     let mode = null; // track if we’re currently collecting for series/edition
 
@@ -161,9 +184,12 @@ export function parseViewArgs(args) {
         } else if (part.startsWith("r:")) {
             mode = null;
             rarity = part.slice(2);
+        } else if (part.startsWith("c:")) {
+            mode = null;
+            charvalue = part.slice(2);
         } else if (part.startsWith("<@")) {
             mode = null;
-            mention = part;
+            metion = part;
         } else {
             // If we are in a mode, keep appending to that
             if (mode === "edition") {
@@ -180,5 +206,5 @@ export function parseViewArgs(args) {
     const edition = editionParts.length ? editionParts.join(" ").trim() : null;
     const series = seriesParts.length ? seriesParts.join(" ").trim() : null;
 
-    return { charname, edition, series, rarity, mention };
+    return { charvalue, charname, edition, series, rarity, metion };
 }

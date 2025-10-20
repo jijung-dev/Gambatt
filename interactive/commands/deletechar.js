@@ -45,7 +45,7 @@ async function ReplyRemoveChar(target, charvalue) {
 function GetFailedEmbed() {
     return new EmbedBuilder()
         .setTitle("❌ Missing arguments")
-        .setDescription("Usage example:\n```\n$removechar ninomae_inanis\n```")
+        .setDescription("$removechar ninomae_inanis```")
         .setColor("#f50000");
 }
 

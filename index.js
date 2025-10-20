@@ -26,6 +26,7 @@ const client = new Client({
 client.commands = new Map();
 client.selects = new Map();
 client.buttons = new Map();
+client.disabledCommands = new Set([]);
 
 /* -------------------- Helper: Recursively Collect JS Files -------------------- */
 function getFiles(dir) {

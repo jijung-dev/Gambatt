@@ -11,7 +11,7 @@ import {
     GetPlayerData,
     ReduceBalance,
 } from "../../utils/userdata_handler.js";
-import { toCodeBlock } from "../../utils/data_utils.js";
+import { getUser, toCodeBlock } from "../../utils/data_utils.js";
 
 const COLOR_DEFAULT = "#6e6e6e";
 const COST = 160;
@@ -33,7 +33,10 @@ export default {
 // =============================== MAIN ===============================
 
 export async function ReplyRoll(target) {
-    const user = getUser(target);
+    const user = await getUser(target);
+    if (!user) {
+        return message.reply("⚠️ Invalid user ID.");
+    }
     const player = await getPlayerOrFail(target, user);
     if (!player) return;
 
@@ -137,6 +140,9 @@ function getCharacterEmbed(user, character, status, collection, rarityValue) {
         .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
         .addFields(fields)
         .setImage(character.image)
+        .setFooter({
+            text: `${character.value}`,
+        })
         .setThumbnail(rarityIcon.image);
 }
 
@@ -147,7 +153,7 @@ function getCharacterEmbed(user, character, status, collection, rarityValue) {
 export async function RollCharacter() {
     const rarity = weightedPick({ ssr: 2, sr: 19, r: 79 });
 
-    const candidates = await GetCharacters(null, null, null, rarity);
+    const candidates = await GetCharacters(null, null, null, null, rarity);
     const id = await weightedPickFromArray(candidates, rarity);
 
     return { id, rarity };
@@ -202,4 +208,3 @@ async function weightedPickFromArray(items) {
 // =============================== UTIL ===============================
 
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
-const getUser = (target) => target.user || target.author;

@@ -15,8 +15,7 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
-    balance INTEGER DEFAULT 0,
-    inventory TEXT DEFAULT '{}'
+    balance INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS user_characters (
@@ -25,8 +24,24 @@ CREATE TABLE IF NOT EXISTS user_characters (
     level INTEGER DEFAULT 1,
     xp_now INTEGER DEFAULT 0,
     xp_max INTEGER DEFAULT 100,
-    PRIMARY KEY (user_id, character_id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    PRIMARY KEY (user_id, character_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_items (
+    user_id TEXT,
+    item_id TEXT,
+    count INTEGER DEFAULT 0,
+    PRIMARY KEY (user_id, item_id)
+);
+
+CREATE TABLE IF NOT EXISTS gears (
+    id TEXT PRIMARY KEY,
+    label TEXT,
+    tier INTEGER DEFAULT 0,
+    growth_rate REAL DEFAULT 0,
+    mood_down_rate REAL DEFAULT 0,
+    supa_rate REAL DEFAULT 0,
+    stamina_cost_per_hour INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS channels (
@@ -45,8 +60,7 @@ CREATE TABLE IF NOT EXISTS channels (
     stamina_max INTEGER DEFAULT 0,
     stamina_cost_per_hour INTEGER DEFAULT 0,
     gears TEXT DEFAULT '${defaultGearsJSON}',
-    PRIMARY KEY (user_id, channel_name),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    PRIMARY KEY (user_id, channel_name)
 );
 
 CREATE TABLE IF NOT EXISTS characters (
@@ -139,8 +153,7 @@ apply_table_schema() {
 # Define schemas
 apply_table_schema "users" \
   "id:id TEXT" \
-  "balance:balance INTEGER DEFAULT 0" \
-  "inventory:inventory TEXT DEFAULT '{}'"
+  "balance:balance INTEGER DEFAULT 0"
 
 apply_table_schema "user_characters" \
   "user_id:user_id TEXT" \
@@ -148,6 +161,20 @@ apply_table_schema "user_characters" \
   "level:level INTEGER DEFAULT 1" \
   "xp_now:xp_now INTEGER DEFAULT 0" \
   "xp_max:xp_max INTEGER DEFAULT 100"
+
+apply_table_schema "user_items" \
+  "user_id:user_id TEXT" \
+  "item_id:item_id TEXT" \
+  "count:count INTEGER DEFAULT 0"
+
+apply_table_schema "gears" \
+  "id:id TEXT" \
+  "label:label TEXT" \
+  "tier:tier INTEGER DEFAULT 0"\
+  "growth_rate:growth_rate REAL DEFAULT 0"\
+  "mood_down_rate:mood_down_rate REAL DEFAULT 0"\
+  "supa_rate:supa_rate REAL DEFAULT 0"\
+  "stamina_cost_per_hour:stamina_cost_per_hour INTEGER DEFAULT 0"
 
 apply_table_schema "channels" \
   "user_id:user_id TEXT" \

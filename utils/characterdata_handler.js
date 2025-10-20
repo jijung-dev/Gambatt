@@ -77,30 +77,21 @@ export async function RemoveCharacter(value) {
     if (result.changes > 0) {
         console.log(`[DB] Removed character: ${value}`);
 
-        // Remove from every user's collection
-        const users = await db.all("SELECT id, collection FROM users");
-        let affectedCount = 0;
-
-        for (const user of users) {
-            const collection = JSON.parse(user.collection || "{}");
-            if (collection[value]) {
-                delete collection[value];
-                await db.run(
-                    "UPDATE users SET collection = ? WHERE id = ?",
-                    JSON.stringify(collection),
-                    user.id
-                );
-                affectedCount++;
-            }
-        }
+        // Remove from every user's collection in user_characters
+        const deleteResult = await db.run(
+            `DELETE FROM user_characters 
+             WHERE character_id = ?`,
+            value
+        );
 
         console.log(
-            `[DB] Removed character '${value}' from ${affectedCount} user(s).`
+            `[DB] Removed character '${value}' from ${deleteResult.changes} user(s) in user_characters.`
         );
     } else {
         console.warn(`[DB] No character found to remove: ${value}`);
     }
 }
+
 export async function HasCharacter(characterValue) {
     const row = await db.get(
         `SELECT 1 FROM characters WHERE value = ?`,
@@ -130,6 +121,7 @@ export async function GetCharacter(characterValue) {
 
 // -------------------- GET MULTIPLE CHARACTERS --------------------
 export async function GetCharacters(
+    charvalue = null,
     charName = null,
     edition = null,
     series = null,
@@ -138,6 +130,10 @@ export async function GetCharacters(
     let query = `SELECT * FROM characters WHERE 1=1`;
     const params = [];
 
+    if (charvalue) {
+        query += ` AND value LIKE ?`;
+        params.push(charvalue);
+    }
     if (charName) {
         query += ` AND LOWER(label) LIKE ?`;
         params.push(`%${charName.toLowerCase()}%`);
@@ -163,6 +159,7 @@ export async function GetCharacters(
 export async function filterCharacters(
     getEntry,
     keys,
+    value,
     charName,
     edition,
     series,
@@ -179,6 +176,7 @@ export async function filterCharacters(
         if (
             matchCharacter(
                 entry,
+                value,
                 nameLower,
                 editionLower,
                 seriesLower,
@@ -193,12 +191,15 @@ export async function filterCharacters(
 
 function matchCharacter(
     entry,
+    value,
     nameLower,
     editionLower,
     seriesLower,
     rarityLower
 ) {
     if (nameLower && !entry.label.toLowerCase().includes(nameLower))
+        return false;
+    if (value && entry.value !== value)
         return false;
     if (editionLower && entry.edition.toLowerCase() !== editionLower)
         return false;

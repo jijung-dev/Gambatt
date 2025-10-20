@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import { getUser } from "../../utils/data_utils";
 
 export default {
     data: new SlashCommandBuilder()
@@ -22,14 +23,7 @@ export default {
         let user;
 
         if (!args?.[0]) {
-            user = message.author;
-        } else {
-            const id = args[0].replace(/[<@!>]/g, "");
-            user = await message.client.users.fetch(id).catch(() => null);
-        }
-
-        if (!user) {
-            return message.reply("⚠️ Invalid user ID.");
+            user = await getUser(message, args[0]);
         }
         await ReplyProfile(message, user);
     },
@@ -38,7 +32,7 @@ export default {
 // -------------------- Helpers --------------------
 async function ReplyProfile(target, user) {
     if (!user) {
-        user = target.user || target.author;
+        return message.reply("⚠️ Invalid user ID.");
     }
     const embed2 = GetProfileEmbed(user);
     return target.reply({

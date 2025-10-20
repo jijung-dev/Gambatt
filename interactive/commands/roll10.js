@@ -13,7 +13,7 @@ import {
     deletePagination,
 } from "../../utils/PaginationStore.js";
 import { GetPageButtons } from "../../utils/PaginationButtons.js";
-import { toCodeBlock } from "../../utils/data_utils.js";
+import { getUser, toCodeBlock } from "../../utils/data_utils.js";
 import { startRoll, endRoll, isRolling } from "../../utils/RollingStore.js";
 
 // =============================== COMMAND ===============================
@@ -37,8 +37,10 @@ export default {
 // =============================== MAIN ===============================
 
 export async function ReplyRoll10(target) {
-    const user = getUser(target);
-
+    const user = await getUser(target);
+    if (!user) {
+        return message.reply("⚠️ Invalid user ID.");
+    }
     // 🚫 Prevent concurrent rolls
     if (isRolling(user.id)) {
         return target.reply({
@@ -289,7 +291,7 @@ function GetCharacterEmbed(
         .addFields(fields)
         .setImage(character.image)
         .setThumbnail(rarityIcon.image)
-        .setFooter({ text: `Page ${pageIndex + 1} / ${totalPages}` });
+        .setFooter({ text: `${character.value} - Page ${pageIndex + 1} / ${totalPages}` });
 }
 
 function finalResultsEmbed(user, results) {
@@ -331,7 +333,6 @@ async function RollCharacterForcedToSR() {
 
 // =============================== UTILS ===============================
 
-const getUser = (target) => target.user || target.author;
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
 async function safeReply(target, payload) {

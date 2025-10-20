@@ -11,7 +11,7 @@ import {
     GetCharactersFromCollection,
     GetCharacterFromCollection,
 } from "../../utils/userdata_handler.js";
-import { toCodeBlock, renderXpBarEmoji } from "../../utils/data_utils.js";
+import { toCodeBlock, renderXpBarEmoji, getUser } from "../../utils/data_utils.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -21,6 +21,12 @@ export default {
             option
                 .setName("charname")
                 .setDescription("Character name (required)")
+                .setRequired(false)
+        )
+        .addStringOption((option) =>
+            option
+                .setName("charvalue")
+                .setDescription("Character value (optional)")
                 .setRequired(false)
         )
         .addStringOption((option) =>
@@ -46,11 +52,13 @@ export default {
 
     async execute(interaction) {
         const charname = interaction.options.getString("charname");
+        const charvalue = interaction.options.getString("charvalue");
         const edition = interaction.options.getString("edition");
         const series = interaction.options.getString("series");
         const rarity = interaction.options.getString("rarity");
 
         await ReplyCollection(interaction, {
+            charvalue,
             charname,
             edition,
             series,
@@ -67,14 +75,16 @@ export default {
 // -------------------- Helpers --------------------
 async function ReplyCollection(
     target,
-    { charname, edition, series, rarity, mention }
+    { charvalue, charname, edition, series, rarity, mention }
 ) {
-    const id = mention?.replace(/[<@!>]/g, "");
-    const metionUser = await target.client.users.fetch(id).catch(() => null);
-    const user = metionUser || target.user || target.author;
+    const user = await getUser(target, mention);
+    if (!user) {
+        return message.reply("⚠️ Invalid user ID.");
+    }
 
     const chars = await GetCharactersFromCollection(
         user,
+        charvalue,
         charname,
         edition,
         series,
@@ -99,7 +109,7 @@ function GetFailedEmbed(user) {
 }
 
 async function SendMatchList(target, charactersMatch, mentionUser) {
-    const user = mentionUser || target.user || target.author;
+    const user = mentionUser;
     const embeds = await GetMatchListEmbeds(charactersMatch, user);
     let currentPage = 0;
 
@@ -182,5 +192,7 @@ function GetCharacterEmbed(characterObject, user, pageIndex, totalPages) {
         )
         .setImage(character.image)
         .setColor(rarityIcon.color)
-        .setFooter({ text: `${character.value} - Page ${pageIndex + 1} / ${totalPages}` });
+        .setFooter({
+            text: `${character.value} - Page ${pageIndex + 1} / ${totalPages}`,
+        });
 }
