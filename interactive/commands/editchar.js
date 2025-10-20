@@ -106,9 +106,9 @@ function GetFailedEmbed() {
     return new EmbedBuilder()
         .setTitle("❌ Missing arguments")
         .setDescription(
-            "$editchar c:ninomae_inanis <n:Ninomae Ina'nis> <s:Hololive> <r:sr> <e:Normal> <l:image link>```"
+            "```$editchar c:ninomae_inanis <n:Ninomae Ina'nis> <s:Hololive> <r:sr> <e:Normal> <l:image link>```"
         )
-        .setFooter("Anything in <> is optional")
+        .setFooter({ text: "Anything in <> is optional" })
         .setColor("#f50000");
 }
 

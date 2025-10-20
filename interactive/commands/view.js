@@ -80,7 +80,13 @@ async function ReplyView(
         return target.reply({ embeds: [GetFailedEmbed()] });
     }
 
-    const chars = await GetCharacters(charvalue, charname, edition, series, rarity);
+    const chars = await GetCharacters(
+        charvalue,
+        charname,
+        edition,
+        series,
+        rarity
+    );
 
     if (chars.length === 0) {
         return target.reply({ embeds: [GetFailedEmbed()] });
@@ -93,9 +99,9 @@ function GetFailedEmbed() {
     return new EmbedBuilder()
         .setTitle("❌ Missing arguments")
         .setDescription(
-            "```$view Ninomae Ina'nis <s:Hololive> <r:sr> <e:Normal> <l:image link>```"
+            "```$view <Ninomae Ina'nis> <c:ninomae_inanis> <s:Hololive> <r:sr> <e:Normal> <l:image link>```"
         )
-        .setFooter("Anything in <> is optional")
+        .setFooter({ text: "Anything in <> is optional but at least one is needed" })
         .setColor("#f50000");
 }
 
