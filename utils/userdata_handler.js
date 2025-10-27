@@ -1,5 +1,8 @@
-import { db } from "../gamedata/database.js";
-import { filterCharacters, GetCharacter } from "./characterdata_handler.js";
+import { db } from "#data";
+import {
+    filterCharacters,
+    getCharacter,
+} from "#utils/characterdata_handler.js";
 
 // -------------------- CLASSES --------------------
 class Player {
@@ -75,7 +78,7 @@ class Item {
 }
 
 // -------------------- PLAYER DATA --------------------
-export async function GetPlayerData(user) {
+export async function getPlayerData(user) {
     if (user.bot) return null;
 
     const row = await db.get("SELECT * FROM users WHERE id = ?", user.id);
@@ -97,8 +100,8 @@ export async function StartPlayer(user) {
 }
 
 // -------------------- BALANCE --------------------
-export async function ReduceBalance(user, amount) {
-    const player = await GetPlayerData(user);
+export async function reduceBalance(user, amount) {
+    const player = await getPlayerData(user);
     if (!player) return null;
 
     player.balance -= amount;
@@ -112,7 +115,7 @@ export async function ReduceBalance(user, amount) {
 }
 
 // -------------------- RARITY INFO --------------------
-export function GetRarityValue(rarity) {
+export function getRarityValue(rarity) {
     switch (rarity.toLowerCase()) {
         case "ssr":
             return { addValue: 60, level: 3, xp_on_start: 90, xp_max: 200 };
@@ -153,10 +156,10 @@ export function GetCharacterMood(mood) {
 }
 
 // -------------------- COLLECTION --------------------
-export async function AddCharacterToCollection(user, characterValue, rarity) {
+export async function addCharacterToCollection(user, characterValue, rarity) {
     if (user.bot) return null;
 
-    const rarityValue = GetRarityValue(rarity);
+    const rarityValue = getRarityValue(rarity);
 
     const charRow = await db.get(
         `SELECT level, xp_now, xp_max FROM user_characters WHERE user_id = ? AND character_id = ?`,
@@ -204,16 +207,7 @@ export async function AddCharacterToCollection(user, characterValue, rarity) {
     return { isFirstTime, isLevelUp, character };
 }
 
-export async function AddCharactersToCollection(user, characters) {
-    if (user.bot) return null;
-    const results = [];
-    for (const { value, rarity } of characters) {
-        results.push(await AddCharacterToCollection(user, value, rarity));
-    }
-    return results;
-}
-
-export async function GetCharacterFromCollection(user, characterValue) {
+export async function getCharacterFromCollection(user, characterValue) {
     if (user.bot) return null;
     const row = await db.get(
         `SELECT level, xp_now, xp_max FROM user_characters WHERE user_id = ? AND character_id = ?`,
@@ -225,7 +219,7 @@ export async function GetCharacterFromCollection(user, characterValue) {
         : { level: -1 };
 }
 
-export async function GetCharactersFromCollection(
+export async function getCharactersFromCollection(
     user,
     value,
     charName,
@@ -240,7 +234,7 @@ export async function GetCharactersFromCollection(
     );
     const keys = rows.map((r) => r.character_id);
     return filterCharacters(
-        (key) => GetCharacter(key),
+        (key) => getCharacter(key),
         keys,
         value,
         charName,
@@ -251,7 +245,7 @@ export async function GetCharactersFromCollection(
 }
 
 // -------------------- CHANNEL --------------------
-export async function GetChannels(user) {
+export async function getChannels(user) {
     if (user.bot) return [];
     const rows = await db.all(
         `SELECT * FROM channels WHERE user_id = ?`,
@@ -260,19 +254,33 @@ export async function GetChannels(user) {
     return rows.map((row) => new Channel(row));
 }
 
-export async function GetChannel(user, namePart) {
+export async function getChannel(user, namePart) {
     if (user.bot) return null;
-    const rows = await db.all(
+
+    // Try exact (case-insensitive) match first
+    const exactRows = await db.all(
+        `SELECT * FROM channels WHERE user_id = ? AND LOWER(channel_name) = LOWER(?)`,
+        user.id,
+        namePart
+    );
+
+    if (exactRows.length > 0) {
+        return exactRows.map((row) => new Channel(row));
+    }
+
+    // Fallback to partial match if no exact match found
+    const partialRows = await db.all(
         `SELECT * FROM channels WHERE user_id = ? AND LOWER(channel_name) LIKE LOWER(?)`,
         user.id,
         `%${namePart}%`
     );
-    return rows.map((row) => new Channel(row));
+
+    return partialRows.map((row) => new Channel(row));
 }
 
-export async function CreateChannel(user, channel) {
+export async function createChannel(user, channel) {
     if (user.bot) return null;
-    await GetPlayerData(user);
+    await getPlayerData(user);
     const gearsObj = channel.gears || {
         cpu: null,
         gpu: null,
@@ -301,15 +309,14 @@ export async function CreateChannel(user, channel) {
         channel.stamina_cost_per_hour,
         JSON.stringify(gearsObj)
     );
+    console.log(
+        `[DB] Created channel: '${channel.channel_name}' owned by ${user.username}`
+    );
 }
 
-export async function UpdateChannel(user, namePart, data) {
+export async function updateChannel(user, channel, data) {
     if (user.bot) return null;
-    const matches = await GetChannel(user, namePart);
-    if (matches.length === 0) return null;
-    if (matches.length > 1) return matches;
 
-    const channel = matches[0];
     const fields = [],
         values = [];
     for (const [key, value] of Object.entries(data)) {
@@ -332,25 +339,23 @@ export async function UpdateChannel(user, namePart, data) {
         user.id,
         newName
     );
+
+    console.log(
+        `[DB] Updated channel: '${channel.channel_name}' owned by ${user.username}`
+    );
     return updatedRow ? new Channel(updatedRow) : null;
 }
 
-export async function DeleteChannel(
-    user,
-    namePart,
-    { checkOnly = false } = {}
-) {
+export async function deleteChannel(user, channel) {
     if (user.bot) return null;
-    const matches = await GetChannel(user, namePart);
-    if (matches.length === 0) return null;
-    if (checkOnly) return matches;
-    if (matches.length > 1) return matches;
 
-    const channel = matches[0];
     await db.run(
         `DELETE FROM channels WHERE user_id = ? AND channel_name = ?`,
         user.id,
         channel.channel_name
+    );
+    console.log(
+        `[DB] Deleted channel: '${channel.channel_name}' owned by ${user.username}`
     );
     return channel;
 }

@@ -1,15 +1,16 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import { rarityIcons } from "../../utils/data_handler.js";
+import { rarityIcons } from "#utils/data_handler.js";
+import { getCharacters, getCharacter } from "#utils/characterdata_handler.js";
+import { setPagination, deletePagination } from "#utils/PaginationStore.js";
+import { getPageButtons } from "#utils/PaginationButtons.js";
 import {
-    GetCharacters,
-    GetCharacter,
-} from "../../utils/characterdata_handler.js";
-import {
-    setPagination,
-    deletePagination,
-} from "../../utils/PaginationStore.js";
-import { GetPageButtons } from "../../utils/PaginationButtons.js";
-import { toCodeBlock } from "../../utils/data_utils.js";
+    checkNull,
+    getUser,
+    parseArgs,
+    toCodeBlock,
+} from "#utils/data_utils.js";
+import { getEmbedCharacterNotFound } from "#utils/errorembeds.js";
+import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -55,7 +56,7 @@ export default {
         const series = interaction.options.getString("series");
         const rarity = interaction.options.getString("rarity");
 
-        await ReplyView(interaction, {
+        await replyView(interaction, {
             charvalue,
             charname,
             edition,
@@ -65,22 +66,23 @@ export default {
     },
 
     async executeMessage(message, args) {
-        const characterValue = parseViewArgs(args);
-        await ReplyView(message, characterValue);
+        const characterValue = parseArgs(args);
+        await replyView(message, characterValue);
     },
+    help: getFailedEmbed(),
 };
 
 // ------------------------------ MAIN ------------------------------
 
-async function ReplyView(
+async function replyView(
     target,
     { charvalue, charname, edition, series, rarity }
 ) {
-    if (!charvalue && !charname && !edition && !series && !rarity) {
-        return target.reply({ embeds: [GetFailedEmbed()] });
+    if (!checkNull("or", { charvalue, charname, edition, series, rarity })) {
+        return target.reply({ embeds: [getFailedEmbed()] });
     }
 
-    const chars = await GetCharacters(
+    const chars = await getCharacters(
         charvalue,
         charname,
         edition,
@@ -89,32 +91,42 @@ async function ReplyView(
     );
 
     if (chars.length === 0) {
-        return target.reply({ embeds: [GetFailedEmbed()] });
+        return target.reply({ embeds: [getEmbedCharacterNotFound()] });
     } else {
-        return SendMatchList(target, chars);
+        return sendMatchList(target, chars);
     }
 }
 
-function GetFailedEmbed() {
-    return new EmbedBuilder()
-        .setTitle("❌ Missing arguments")
-        .setDescription(
-            "```$view <Ninomae Ina'nis> <c:ninomae_inanis> <s:Hololive> <r:sr> <e:Normal> <l:image link>```"
+// ------------------------------ EMBEDS ------------------------------
+
+function getFailedEmbed() {
+    const helpEmbed = new HelpEmbedBuilder()
+        .withName("view")
+        .withDescription("View existing characters")
+        .withAliase(["v", "view"])
+        .withExampleUsage(
+            "$view n:Ninomae Ina'nis c:ninomae_inanis s:Hololive r:sr e:Normal"
         )
-        .setFooter({ text: "Anything in <> is optional but at least one is needed" })
-        .setColor("#f50000");
+        .withUsage(
+            "**/view** `<c:[Character Value]>` `<n:[Character Name]>` `<s:[Series]>` `<r:[rarity]>` `<e:[Edition]>`"
+        )
+        .build();
+    return helpEmbed;
 }
 
-async function SendMatchList(target, charactersMatch) {
-    const user = target.user || target.author;
-    const embeds = await GetMatchListEmbeds(charactersMatch, user);
+async function sendMatchList(target, charactersMatch) {
+    const user = await getUser(target);
+    if (!user) {
+        return message.reply("⚠️ Invalid user ID.");
+    }
+    const embeds = await getMatchListEmbeds(charactersMatch);
     let currentPage = 0;
 
     const reply = await target.reply({
         embeds: [embeds[currentPage]],
         components:
             embeds.length > 1
-                ? [GetPageButtons(true, embeds.length === 1, user)]
+                ? [getPageButtons(true, embeds.length === 1, user)]
                 : [],
         fetchReply: true,
     });
@@ -131,14 +143,14 @@ async function SendMatchList(target, charactersMatch) {
     }
 }
 
-async function GetMatchListEmbeds(charactersMatch, user) {
-    const entries = await Promise.all(charactersMatch.map(GetCharacter));
+async function getMatchListEmbeds(charactersMatch) {
+    const entries = await Promise.all(charactersMatch.map(getCharacter));
     return entries.map((character, i) =>
-        GetCharacterEmbed(character, user, i, entries.length)
+        getCharacterEmbed(character, i, entries.length)
     );
 }
 
-function GetCharacterEmbed(character, user, pageIndex, totalPages) {
+function getCharacterEmbed(character, pageIndex, totalPages) {
     const rarityIcon = rarityIcons[character.rarity];
 
     return new EmbedBuilder()
@@ -166,51 +178,4 @@ function GetCharacterEmbed(character, user, pageIndex, totalPages) {
         .setFooter({
             text: `${character.value} - Page ${pageIndex + 1} / ${totalPages}`,
         });
-}
-
-// ------------------------------ ARG PARSER ------------------------------
-
-export function parseViewArgs(args) {
-    let charnameParts = [];
-    let editionParts = [];
-    let seriesParts = [];
-    let rarity = null;
-    let charvalue = null;
-    let metion = null;
-
-    let mode = null; // track if we’re currently collecting for series/edition
-
-    for (const part of args) {
-        if (part.startsWith("e:")) {
-            mode = "edition";
-            editionParts.push(part.slice(2));
-        } else if (part.startsWith("s:")) {
-            mode = "series";
-            seriesParts.push(part.slice(2));
-        } else if (part.startsWith("r:")) {
-            mode = null;
-            rarity = part.slice(2);
-        } else if (part.startsWith("c:")) {
-            mode = null;
-            charvalue = part.slice(2);
-        } else if (part.startsWith("<@")) {
-            mode = null;
-            metion = part;
-        } else {
-            // If we are in a mode, keep appending to that
-            if (mode === "edition") {
-                editionParts.push(part);
-            } else if (mode === "series") {
-                seriesParts.push(part);
-            } else {
-                charnameParts.push(part);
-            }
-        }
-    }
-
-    const charname = charnameParts.join(" ").trim() || null;
-    const edition = editionParts.length ? editionParts.join(" ").trim() : null;
-    const series = seriesParts.length ? seriesParts.join(" ").trim() : null;
-
-    return { charvalue, charname, edition, series, rarity, metion };
 }

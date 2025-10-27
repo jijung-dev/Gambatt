@@ -1,15 +1,28 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import { rarityIcons } from "../../utils/data_handler.js";
-import { GetCharacter } from "../../utils/characterdata_handler.js";
-import { renderXpBarEmoji } from "../../utils/data_utils.js";
+import { rarityIcons } from "#utils/data_handler.js";
+import { getCharacter, hasCharacter } from "#utils/characterdata_handler.js";
+import {
+    checkNull,
+    getUser,
+    isAllowedImageDomain,
+    parseArgs,
+    renderXpBarEmoji,
+} from "#utils/data_utils.js";
 import {
     Channel,
-    CreateChannel,
-    GetChannel,
-    GetCharacterFromCollection,
+    createChannel,
+    getChannel,
+    getCharacterFromCollection,
     GetCharacterMood,
     GetCharacterStat,
-} from "../../utils/userdata_handler.js";
+} from "#utils/userdata_handler.js";
+import {
+    getEmbedNotAllowedLink,
+    getEmbedChannelAlreadyExists,
+    getEmbedCharacterNotFound,
+    getEmbedCharacterNotOwned,
+} from "#utils/errorembeds.js";
+import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -57,7 +70,7 @@ export default {
         const banner_picture = interaction.options.getString("banner_picture");
         const color = interaction.options.getString("color");
 
-        await ReplyCreateChannel(interaction, {
+        await replyCreateChannel(interaction, {
             channame,
             charvalue,
             profile_picture,
@@ -67,91 +80,100 @@ export default {
     },
 
     async executeMessage(message, args) {
-        const characterValue = parseAddCharArgs(args);
+        const characterValue = parseArgs(args);
 
-        await ReplyCreateChannel(message, characterValue);
+        await replyCreateChannel(message, characterValue);
     },
+
+    help: getFailedEmbed(),
 };
 
 // ------------------------------ MAIN ------------------------------
 
-async function ReplyCreateChannel(
+async function replyCreateChannel(
     target,
     { channame, charvalue, profile_picture, banner_picture, color }
 ) {
-    const character = await GetCharacter(charvalue);
+    // Basic argument validation
     if (
-        !channame ||
-        !charvalue ||
-        !profile_picture ||
-        !banner_picture ||
-        !color ||
-        !character
+        !checkNull("all", {
+            channame,
+            charvalue,
+            profile_picture,
+            banner_picture,
+            color,
+        })
     ) {
-        return target.reply({ embeds: [GetFailedEmbed()] });
-    }
-    const user = target.user || target.author;
-
-    if ((await GetChannel(user, channame)).length > 0) {
-        return target.reply({ embeds: [GetFailedEmbedAlreadyOwn(channame)] });
+        return target.reply({ embeds: [getFailedEmbed()] });
     }
 
-    const charLevel = await GetCharacterFromCollection(user, charvalue);
-    if (charLevel.level == -1)
-        return target.reply({ embeds: [GetFailedEmbedNotOwned(charvalue)] });
+    // Image link domain validation
+    if (!isAllowedImageDomain(profile_picture, banner_picture)) {
+        return target.reply({ embeds: [getEmbedNotAllowedLink()] });
+    }
 
+    // Character existence check
+    if (!(await hasCharacter(charvalue))) {
+        return target.reply({ embeds: [getEmbedCharacterNotFound(charvalue)] });
+    }
+    const character = await getCharacter(charvalue);
+
+    const user = await getUser(target);
+    if (!user) {
+        return message.reply("⚠️ Invalid user ID.");
+    }
+
+    // Channel duplication check
+    if ((await getChannel(user, channame)).length > 0) {
+        return target.reply({
+            embeds: [getEmbedChannelAlreadyExists(channame)],
+        });
+    }
+
+    // Ownership and level check
+    const charLevel = await getCharacterFromCollection(user, charvalue);
+    if (charLevel.level == -1) {
+        return target.reply({ embeds: [getEmbedCharacterNotOwned(charvalue)] });
+    }
+
+    // Character stat and channel creation
     const charStat = GetCharacterStat(character, charLevel.level);
+    const newChannel = createChannelData(
+        user,
+        channame,
+        charvalue,
+        profile_picture,
+        banner_picture,
+        color,
+        charStat
+    );
+    await createChannel(user, newChannel);
 
-    const newChannel = new Channel({
-        user_id: user.id,
-        channel_name: channame,
-        profile_picture: profile_picture,
-        banner_picture: banner_picture,
-        mood: 0,
-        color: color,
-        character_id: charvalue,
-        sub_count: 0,
-        growth_rate: charStat.growth_rate,
-        mood_down_rate: charStat.mood_down_rate,
-        supa_rate: charStat.supa_rate,
-        stamina_current: charStat.stamina_max,
-        stamina_max: charStat.stamina_max,
-        stamina_cost_per_hour: charStat.stamina_cost_per_hour,
-        gears: null,
-    });
-    await CreateChannel(user, newChannel);
-
+    // Success reply
     return target.reply({
-        embeds: [GetChannelEmbed(user, newChannel, character)],
+        embeds: [getChannelEmbed(user, newChannel, character)],
     });
 }
 
-function GetFailedEmbed() {
-    return new EmbedBuilder()
-        .setTitle("❌ Missing arguments")
-        .setDescription(
-            "```$createchannel n:Ninomae Ina'nis c:ninomae_inanis ec:#ffffff pl:profile picture link bl:banner picture link```"
+// ------------------------------ EMBEDS ------------------------------
+
+function getFailedEmbed() {
+    const helpEmbed = new HelpEmbedBuilder()
+        .withName("createchannel")
+        .withDescription("Create a new channel with provided properties.")
+        .withAliase(["cch", "createchannel"])
+        .withExampleUsage(
+            "$createchannel cn:Ninomae Ina'nis c:ninomae_inanis ec:#ffffff pl:profile bl:banner"
         )
-        .setColor("#f50000");
-}
-function GetFailedEmbedNotOwned(character_id) {
-    return new EmbedBuilder()
-        .setTitle("❌ You don't own that character")
-        .setDescription(`\`${character_id}\``)
-        .setColor("#f50000");
-}
-function GetFailedEmbedAlreadyOwn(channame) {
-    return new EmbedBuilder()
-        .setTitle("❌ You already have a channel with that name")
-        .setDescription(`\`${channame}\``)
-        .setColor("#f50000");
+        .withUsage(
+            "**/createchannel** `cn:[Channel Name]` `c:[Character Value]` `ec:[Embed Color]` `pl:[Profile Image Link]` `bl:[Banner Image Link]`"
+        )
+        .build();
+    return helpEmbed;
 }
 
-function GetChannelEmbed(user, channel, character) {
-    const rarityIcon = rarityIcons[character.rarity] || {
-        image: "",
-        color: "#ffffff",
-    };
+function getChannelEmbed(user, channel, character) {
+    const rarityIcon = rarityIcons[character.rarity];
 
     return new EmbedBuilder()
         .setAuthor({
@@ -205,39 +227,32 @@ function GetChannelEmbed(user, channel, character) {
         .setColor(channel.color);
 }
 
-// ------------------------------ ARG PARSER ------------------------------
+// ------------------------------ HELPERS ------------------------------
 
-function parseAddCharArgs(args) {
-    let channelnameParts = [];
-    let charvalue = null;
-    let profile_picture = null;
-    let banner_picture = null;
-    let color = null;
-
-    let mode = null;
-
-    for (const part of args) {
-        if (part.startsWith("n:")) {
-            mode = "channel_name";
-            channelnameParts.push(part.slice(2));
-        } else if (part.startsWith("c:")) {
-            mode = null;
-            charvalue = part.slice(2);
-        } else if (part.startsWith("pl:")) {
-            mode = null;
-            profile_picture = part.slice(3);
-        } else if (part.startsWith("bl:")) {
-            mode = null;
-            banner_picture = part.slice(3);
-        } else if (part.startsWith("ec:")) {
-            mode = null;
-            color = part.slice(3);
-        } else {
-            if (mode === "channel_name") channelnameParts.push(part);
-        }
-    }
-
-    const channame = channelnameParts.join(" ").trim() || null;
-
-    return { channame, charvalue, profile_picture, banner_picture, color };
+function createChannelData(
+    user,
+    channame,
+    charvalue,
+    profile_picture,
+    banner_picture,
+    color,
+    charStat
+) {
+    return new Channel({
+        user_id: user.id,
+        channel_name: channame,
+        profile_picture: profile_picture,
+        banner_picture: banner_picture,
+        mood: 0,
+        color: color,
+        character_id: charvalue,
+        sub_count: 0,
+        growth_rate: charStat.growth_rate,
+        mood_down_rate: charStat.mood_down_rate,
+        supa_rate: charStat.supa_rate,
+        stamina_current: charStat.stamina_max,
+        stamina_max: charStat.stamina_max,
+        stamina_cost_per_hour: charStat.stamina_cost_per_hour,
+        gears: null,
+    });
 }

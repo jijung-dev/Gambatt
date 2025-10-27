@@ -4,7 +4,7 @@ export default {
     name: "interactionCreate",
     async execute(client, interaction) {
         try {
-            // block interaction theft
+            /* -------------------- Block Interaction Theft -------------------- */
             if (interaction.isButton() || interaction.isStringSelectMenu()) {
                 const [, originalUserId] = interaction.customId.split("|");
 
@@ -16,7 +16,7 @@ export default {
                 }
             }
 
-            // selects
+            /* -------------------- Select Handler -------------------- */
             if (interaction.isStringSelectMenu()) {
                 let handler = client.selects?.get(interaction.customId);
                 if (!handler) {
@@ -28,7 +28,7 @@ export default {
                 }
             }
 
-            // buttons
+            /* -------------------- Buttons Handler -------------------- */
             if (interaction.isButton()) {
                 let handler = client.buttons?.get(interaction.customId);
                 if (!handler) {
@@ -40,12 +40,10 @@ export default {
                 }
             }
 
-            // slash commands
+            /* -------------------- Slash Command Handler -------------------- */
             if (!interaction.isChatInputCommand()) return;
 
             const commandName = interaction.commandName;
-
-            // ✅ Disabled command check
             if (client.disabledCommands?.has(commandName)) {
                 return interaction.reply({
                     content: `❌ The command \`${commandName}\` is not allowed right now.`,

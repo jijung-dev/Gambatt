@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
-import { initDatabase } from "./gamedata/database.js";
+import { initDatabase } from "#data";
 
 // ESM replacement for __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 // Load JSON config
 const configPath = path.join(__dirname, "config.json");
 const rawData = fs.readFileSync(configPath, "utf-8");
-const { clientId, guildId, token, prefix = "." } = JSON.parse(rawData);
+const { clientId, token } = JSON.parse(rawData);
 
 // Create client
 const client = new Client({

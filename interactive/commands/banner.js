@@ -3,8 +3,8 @@ import {
     EmbedBuilder,
     ActionRowBuilder,
 } from "discord.js";
-import { rarityIcons } from "../../utils/data_handler.js";
-import { GetCharacter, GetBanner } from "../../utils/characterdata_handler.js";
+import { rarityIcons } from "#utils/data_handler.js";
+import { getCharacter, getBanner } from "#utils/characterdata_handler.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -24,20 +24,19 @@ export default {
 
 // -------------------- Helpers --------------------
 async function Reply(target, client) {
-
     return target.reply("No banner for now");
 }
 async function ReplyBanner(target, client) {
-    const { GetRoll10 } = client.buttons.get("roll10");
-    const { GetRoll } = client.buttons.get("roll");
+    const { getRoll10 } = client.buttons.get("roll10");
+    const { getRoll } = client.buttons.get("roll");
     const { ViewCharacterBanner } = client.selects.get("view_char_banner");
 
-    const banner = await GetBanner();
+    const banner = await getBanner();
     const embed2 = await GetBannerEmbed(banner.current_characters[0]);
     const userID = target.user?.id || target.author?.id;
     const select2 = await ViewCharacterBanner(userID);
-    const roll1 = await GetRoll(userID);
-    const roll10 = await GetRoll10(userID);
+    const roll1 = await getRoll(userID);
+    const roll10 = await getRoll10(userID);
 
     return target.reply({
         embeds: [embed2],
@@ -49,7 +48,7 @@ async function ReplyBanner(target, client) {
 }
 
 export async function GetBannerEmbed(characterValue) {
-    const character = await GetCharacter(characterValue);
+    const character = await getCharacter(characterValue);
     const rarityIcon = rarityIcons[character.rarity];
 
     return new EmbedBuilder()

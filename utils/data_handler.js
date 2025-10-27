@@ -1,8 +1,5 @@
 import { Jsoning } from "jsoning";
 
-const dataTable = new Jsoning("./gamedata/data.json");
-const characterTable = new Jsoning("./gamedata/characterdata.json");
-const userTable = new Jsoning("./gamedata/userdata.json");
 const perserverTable = new Jsoning("./gamedata/perserverdata.json");
 
 const rarityIcons = {

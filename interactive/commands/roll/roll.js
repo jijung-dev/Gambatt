@@ -1,20 +1,15 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import { rarityIcons, currencyIcon } from "../../utils/data_handler.js";
+import { rarityIcons, currencyIcon } from "#utils/data_handler.js";
+import { getCharacters, getCharacter } from "#utils/characterdata_handler.js";
 import {
-    GetCharacters,
-    GetCharacter,
-    GetBanner,
-} from "../../utils/characterdata_handler.js";
-import {
-    AddCharacterToCollection,
-    GetRarityValue,
-    GetPlayerData,
-    ReduceBalance,
-} from "../../utils/userdata_handler.js";
-import { getUser, toCodeBlock } from "../../utils/data_utils.js";
-
-const COLOR_DEFAULT = "#6e6e6e";
-const COST = 160;
+    addCharacterToCollection,
+    getRarityValue,
+    getPlayerData,
+    reduceBalance,
+} from "#utils/userdata_handler.js";
+import { COSTPERROLL, getUser, toCodeBlock, wait } from "#utils/data_utils.js";
+import { getEmbedNotEnoughBalance } from "#utils/errorembeds.js";
+import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
 
 export default {
     data: new SlashCommandBuilder().setName("roll").setDescription("Roll once"),
@@ -22,25 +17,38 @@ export default {
     aliases: ["r"],
 
     async execute(interaction) {
-        await ReplyRoll(interaction);
+        await replyRoll(interaction);
     },
 
     async executeMessage(message) {
-        await ReplyRoll(message);
+        await replyRoll(message);
     },
+    help: getHelpEmbed(),
 };
 
 // =============================== MAIN ===============================
 
-export async function ReplyRoll(target) {
+export async function replyRoll(target) {
     const user = await getUser(target);
     if (!user) {
         return message.reply("⚠️ Invalid user ID.");
     }
+
     const player = await getPlayerOrFail(target, user);
     if (!player) return;
 
-    const characterValue = await RollCharacter();
+    // 🚫 Prevent concurrent rolls
+    if (isRolling(user.id)) {
+        return target.reply({
+            content:
+                "⛔ You already have an active roll in progress. Please wait until it finishes.",
+            ephemeral: true,
+        });
+    }
+
+    startRoll(user.id);
+
+    const characterValue = await rollCharacter();
 
     const replyMessage = await target.reply({
         embeds: [
@@ -54,19 +62,18 @@ export async function ReplyRoll(target) {
         ],
     });
 
-    const character = await GetCharacter(characterValue.id);
+    const character = await getCharacter(characterValue.id);
     await wait(200);
 
-    const collection = await AddCharacterToCollection(
+    const collection = await addCharacterToCollection(
         user,
         character.value,
         character.rarity
     );
 
-    // Deduct cost only if successful
-    await ReduceBalance(user, COST);
+    await reduceBalance(user, COSTPERROLL);
 
-    const rarityValue = GetRarityValue(character.rarity);
+    const rarityValue = getRarityValue(character.rarity);
     const titleStatus = collection.isFirstTime
         ? "🆕 New!"
         : collection.isLevelUp
@@ -82,14 +89,18 @@ export async function ReplyRoll(target) {
     );
 
     await replyMessage.edit({ embeds: [finalEmbed] });
+
+    endRoll(user.id);
 }
 
 // =============================== PLAYER / CHECKS ===============================
 
 async function getPlayerOrFail(target, user) {
-    const player = await GetPlayerData(user);
-    if (player.balance < COST) {
-        await target.reply({ embeds: [failedEmbed(user, player, COST)] });
+    const player = await getPlayerData(user);
+    if (player.balance < COSTPERROLL) {
+        await target.reply({
+            embeds: [getEmbedNotEnoughBalance(player.balance, COSTPERROLL)],
+        });
         return null;
     }
     return player;
@@ -97,17 +108,15 @@ async function getPlayerOrFail(target, user) {
 
 // =============================== EMBEDS ===============================
 
-function failedEmbed(user, player, cost) {
-    return new EmbedBuilder()
-        .setTitle(`Not enough ${currencyIcon.cube.emoji}`)
-        .setColor("#ff0000")
-        .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
-        .addFields([
-            {
-                name: "Balance",
-                value: `You have **${player.balance} ${currencyIcon.cube.emoji}**, but need **${cost} ${currencyIcon.cube.emoji}**.`,
-            },
-        ]);
+function getHelpEmbed() {
+    const helpEmbed = new HelpEmbedBuilder()
+        .withName("roll")
+        .withDescription(
+            `Roll once. Each roll cost \`${COSTPERROLL}\`${currencyIcon.cube.emoji}`
+        )
+        .withAliase(["r", "roll"])
+        .build();
+    return helpEmbed;
 }
 
 function getCharacterEmbed(user, character, status, collection, rarityValue) {
@@ -147,19 +156,20 @@ function getCharacterEmbed(user, character, status, collection, rarityValue) {
 }
 
 // =============================== ROLL ===============================
-/**
- * @returns {string} return picked character value
- */
-export async function RollCharacter() {
+export async function rollCharacter() {
     const rarity = weightedPick({ ssr: 2, sr: 19, r: 79 });
-
-    const candidates = await GetCharacters(null, null, null, null, rarity);
-    const id = await weightedPickFromArray(candidates, rarity);
+    const id = await rollCharacterFromRarity(rarity);
 
     return { id, rarity };
 }
+export async function rollCharacterFromRarity(rarity) {
+    const candidates = await getCharacters(null, null, null, null, rarity);
+    const id = await weightedPickFromArray(candidates);
 
-function weightedPick(weightMap) {
+    return id;
+}
+
+export function weightedPick(weightMap) {
     const entries = Object.entries(weightMap);
     let roll = Math.random() * entries.reduce((sum, [, w]) => sum + w, 0);
 
@@ -175,7 +185,7 @@ async function weightedPickFromArray(items) {
 }
 
 // async function weightedPickFromBanner(items, rarity) {
-//     const { current_characters } = await GetBanner();
+//     const { current_characters } = await getBanner();
 //     const featured = items.filter((id) => current_characters.includes(id));
 //     const nonFeatured = items.filter((id) => !current_characters.includes(id));
 
@@ -204,7 +214,3 @@ async function weightedPickFromArray(items) {
 
 //     return weightedPick(weights);
 // }
-
-// =============================== UTIL ===============================
-
-const wait = (ms) => new Promise((res) => setTimeout(res, ms));

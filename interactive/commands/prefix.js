@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
-import { SetPrefix } from "../../utils/data_handler.js";
+import { SetPrefix } from "#utils/data_handler.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -16,7 +16,9 @@ export default {
     aliases: [],
 
     async execute(interaction) {
-        if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageGuild)) {
+        if (
+            !interaction.memberPermissions.has(PermissionFlagsBits.ManageGuild)
+        ) {
             return interaction.reply(
                 "⛔ You don't have permission to change the prefix!"
             );
@@ -41,4 +43,16 @@ export default {
         SetPrefix(message.guild.id, newPrefix);
         await message.reply(`✅ Prefix changed to: \`${newPrefix}\``);
     },
+    help: getHelpEmbed(),
 };
+
+function getHelpEmbed() {
+    const helpEmbed = new HelpEmbedBuilder()
+        .withName("prefix")
+        .withDescription("Change server prefix")
+        .withAliase(["prefix"])
+        .withExampleUsage("$prefix .")
+        .withUsage("**/prefix** `[Prefix]`")
+        .build();
+    return helpEmbed;
+}

@@ -1,17 +1,15 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import { rarityIcons } from "../../utils/data_handler.js";
-import { GetCharacter } from "../../utils/characterdata_handler.js";
+import { rarityIcons } from "#utils/data_handler.js";
+import { getCharacter } from "#utils/characterdata_handler.js";
+import { setPagination, deletePagination } from "#utils/PaginationStore.js";
+import { getPageButtons } from "#utils/PaginationButtons.js";
 import {
-    setPagination,
-    deletePagination,
-} from "../../utils/PaginationStore.js";
-import { GetPageButtons } from "../../utils/PaginationButtons.js";
-import {
-    GetChannel,
-    GetChannels,
+    getChannel,
+    getChannels,
     GetCharacterMood,
-} from "../../utils/userdata_handler.js";
-import { renderXpBarEmoji } from "../../utils/data_utils.js";
+} from "#utils/userdata_handler.js";
+import { getUser, parseArgs, renderXpBarEmoji } from "#utils/data_utils.js";
+import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -22,43 +20,56 @@ export default {
                 .setName("channel_name")
                 .setDescription("Channel name")
                 .setRequired(false)
+        )
+        .addUserOption((option) =>
+            option
+                .setName("user_id")
+                .setDescription("user_id")
+                .setRequired(false)
         ),
 
     name: "viewchannel",
     aliases: ["vch"],
 
     async execute(interaction) {
-        const channel_name = interaction.options.getString("channel_name");
-        await ReplyChannel(interaction, channel_name);
+        const channame = interaction.options.getString("channel_name");
+        const mention = interaction.options.getString("user_id");
+        await replyChannel(interaction, { channame, mention });
     },
 
     async executeMessage(message, args) {
-        const channel_name = args ? args.join(" ") : null;
-        await ReplyChannel(message, channel_name);
+        const channel = parseArgs(args);
+        await replyChannel(message, channel);
     },
+    help: getHelpEmbed(),
 };
 
 // ------------------------------ MAIN ------------------------------
 
-async function ReplyChannel(target, channame) {
+async function replyChannel(target, { channame, mention }) {
+    const user = await getUser(target, mention);
+    if (!user) {
+        return message.reply("⚠️ Invalid user ID.");
+    }
 
-    const user = target.user || target.author;
     let channels;
 
     if (!channame) {
-        channels = await GetChannels(user);
+        channels = await getChannels(user);
     } else {
-        channels = await GetChannel(user, channame);
+        channels = await getChannel(user, channame);
     }
 
     if (!channels || channels.length === 0) {
-        return target.reply({ embeds: [GetFailedEmbed(user)] });
+        return target.reply({ embeds: [getFailedEmbed(user)] });
     } else {
-        return SendMatchList(user, target, channels);
+        return sendMatchList(user, target, channels);
     }
 }
 
-function GetFailedEmbed(user) {
+// ------------------------------ EMBEDS ------------------------------
+
+function getFailedEmbed(user) {
     return new EmbedBuilder()
         .setAuthor({
             name: `${user.username}'s channels`,
@@ -68,15 +79,28 @@ function GetFailedEmbed(user) {
         .setColor("#858585");
 }
 
-async function SendMatchList(user, target, channelsMatch) {
-    const embeds = await GetMatchListEmbeds(channelsMatch, user);
+function getHelpEmbed() {
+    const helpEmbed = new HelpEmbedBuilder()
+        .withName("viewchannel")
+        .withDescription("View a channel stats and properties")
+        .withAliase(["vch", "viewchannel"])
+        .withExampleUsage("$viewchannel @JiJung cn:Ninomae Ina'nis")
+        .withUsage(
+            "**/viewchannel** `<@user | u:[user_id]>` `cn:[Channel Name]`"
+        )
+        .build();
+    return helpEmbed;
+}
+
+async function sendMatchList(user, target, channelsMatch) {
+    const embeds = await getMatchListEmbeds(channelsMatch, user);
     let currentPage = 0;
 
     const reply = await target.reply({
         embeds: [embeds[currentPage]],
         components:
             embeds.length > 1
-                ? [GetPageButtons(true, embeds.length === 1, user)]
+                ? [getPageButtons(true, embeds.length === 1, user)]
                 : [],
         fetchReply: true,
     });
@@ -93,21 +117,18 @@ async function SendMatchList(user, target, channelsMatch) {
     }
 }
 
-async function GetMatchListEmbeds(channelsMatch, user) {
+async function getMatchListEmbeds(channelsMatch, user) {
     const embeds = await Promise.all(
         channelsMatch.map((channel, i) =>
-            GetChannelEmbed(user, channel, i, channelsMatch.length)
+            getChannelEmbed(user, channel, i, channelsMatch.length)
         )
     );
     return embeds;
 }
 
-async function GetChannelEmbed(user, channel, pageIndex, totalPages) {
-    const character = await GetCharacter(channel.character_id);
-    const rarityIcon = rarityIcons[character.rarity] || {
-        image: "",
-        color: "#ffffff",
-    };
+async function getChannelEmbed(user, channel, pageIndex, totalPages) {
+    const character = await getCharacter(channel.character_id);
+    const rarityIcon = rarityIcons[character.rarity];
 
     return new EmbedBuilder()
         .setAuthor({

@@ -1,6 +1,6 @@
 import { MessageFlags } from "discord.js";
-import { GetPageButtons } from "../../utils/PaginationButtons.js";
-import { getPagination } from "../../utils/PaginationStore.js";
+import { getPageButtons } from "#utils/PaginationButtons.js";
+import { getPagination } from "#utils/PaginationStore.js";
 
 export default {
     id: "prev_page",
@@ -19,7 +19,7 @@ export default {
         await interaction.update({
             embeds: [pagination.embeds[pagination.currentPage]],
             components: [
-                GetPageButtons(
+                getPageButtons(
                     pagination.currentPage === 0,
                     pagination.currentPage === pagination.embeds.length - 1,
                     interaction.user,

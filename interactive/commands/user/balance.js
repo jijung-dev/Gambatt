@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import { currencyIcon } from "../../utils/data_handler.js";
-import { GetPlayerData } from "../../utils/userdata_handler.js";
-import { getUser } from "../../utils/data_utils.js";
+import { currencyIcon } from "#utils/data_handler.js";
+import { getPlayerData } from "#utils/userdata_handler.js";
+import { getUser } from "#utils/data_utils.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -18,7 +18,7 @@ export default {
 
     async execute(interaction) {
         const user = interaction.options.getUser("user_id") || interaction.user;
-        await ReplyBalance(interaction, user);
+        await replyBalance(interaction, user);
     },
 
     async executeMessage(message, args) {
@@ -27,22 +27,23 @@ export default {
         if (!args?.[0]) {
             user = await getUser(message, args[0]);
         }
-        await ReplyBalance(message, user);
+        await replyBalance(message, user);
     },
+    help: getHelpEmbed(),
 };
 
-async function ReplyBalance(target, user) {
+async function replyBalance(target, user) {
     if (!user) {
         return message.reply("⚠️ Invalid user ID.");
     }
-    const embed2 = await GetBalanceEmbed(user);
+    const embed2 = await getBalanceEmbed(user);
     return target.reply({
         embeds: [embed2],
     });
 }
 
-async function GetBalanceEmbed(user) {
-    const playerData = await GetPlayerData(user);
+async function getBalanceEmbed(user) {
+    const playerData = await getPlayerData(user);
 
     return new EmbedBuilder()
         .setAuthor({
@@ -51,4 +52,15 @@ async function GetBalanceEmbed(user) {
         })
         .setTitle(`${playerData.balance} ${currencyIcon.cube.emoji}`)
         .setColor("#a700f5");
+}
+
+function getHelpEmbed() {
+    const helpEmbed = new HelpEmbedBuilder()
+        .withName("balance")
+        .withDescription("View user current balance")
+        .withAliase(["bal", "balance"])
+        .withExampleUsage("$balance @JiJung")
+        .withUsage("**/balance** `<@user | u:[user_id]>`")
+        .build();
+    return helpEmbed;
 }

@@ -1,4 +1,4 @@
-import { db } from "../gamedata/database.js";
+import { db } from "#data";
 
 class Character {
     constructor(
@@ -25,7 +25,7 @@ class Banner {
 }
 
 // -------------------- CHARACTER MANIPULATION --------------------
-export async function AddCharacter({
+export async function addCharacter({
     value,
     label,
     series,
@@ -44,13 +44,14 @@ export async function AddCharacter({
         edition
     );
     console.log(`[DB] Added or updated character: ${label}`);
+    return new Character(value, label, series, rarity, image, edition);
 }
 
-export async function EditCharacter(value, updates = {}) {
+export async function editCharacter(value, updates = {}) {
     const fields = Object.keys(updates);
     if (fields.length === 0) {
         console.warn(`[DB] No fields provided to edit for ${value}`);
-        return;
+        return null;
     }
 
     const setClause = fields.map((f) => `${f} = ?`).join(", ");
@@ -62,12 +63,28 @@ export async function EditCharacter(value, updates = {}) {
 
     if (result.changes > 0) {
         console.log(`[DB] Edited character: ${value}`);
+
+        const updatedRow = await db.get(
+            `SELECT value, label, series, rarity, image, edition
+             FROM characters WHERE value = ?`,
+            value
+        );
+
+        return new Character(
+            updatedRow.value,
+            updatedRow.label,
+            updatedRow.series,
+            updatedRow.rarity,
+            updatedRow.image,
+            updatedRow.edition
+        );
     } else {
         console.warn(`[DB] No character found with value: ${value}`);
+        return null;
     }
 }
 
-export async function RemoveCharacter(value) {
+export async function removeCharacter(value) {
     // Delete from characters table
     const result = await db.run(
         `DELETE FROM characters WHERE value = ?`,
@@ -92,7 +109,7 @@ export async function RemoveCharacter(value) {
     }
 }
 
-export async function HasCharacter(characterValue) {
+export async function hasCharacter(characterValue) {
     const row = await db.get(
         `SELECT 1 FROM characters WHERE value = ?`,
         characterValue
@@ -101,7 +118,7 @@ export async function HasCharacter(characterValue) {
 }
 
 // -------------------- GET CHARACTER --------------------
-export async function GetCharacter(characterValue) {
+export async function getCharacter(characterValue) {
     const row = await db.get(
         `SELECT * FROM characters WHERE value = ?`,
         characterValue
@@ -120,7 +137,7 @@ export async function GetCharacter(characterValue) {
 }
 
 // -------------------- GET MULTIPLE CHARACTERS --------------------
-export async function GetCharacters(
+export async function getCharacters(
     charvalue = null,
     charName = null,
     edition = null,
@@ -199,8 +216,7 @@ function matchCharacter(
 ) {
     if (nameLower && !entry.label.toLowerCase().includes(nameLower))
         return false;
-    if (value && entry.value !== value)
-        return false;
+    if (value && entry.value !== value) return false;
     if (editionLower && entry.edition.toLowerCase() !== editionLower)
         return false;
     if (seriesLower && !entry.series.toLowerCase().includes(seriesLower))
@@ -210,7 +226,7 @@ function matchCharacter(
 }
 
 // -------------------- BANNER FUNCTIONS --------------------
-export async function GetBanner() {
+export async function getBanner() {
     const row = await db.get(`SELECT value FROM data WHERE key = 'banner'`);
     if (!row) throw new Error("No banner found");
 
@@ -218,7 +234,7 @@ export async function GetBanner() {
     return new Banner(parsed.current_characters || []);
 }
 
-export async function SetBanner(characters) {
+export async function setBanner(characters) {
     const value = JSON.stringify({ current_characters: characters });
     await db.run(
         `INSERT OR REPLACE INTO data (key, value) VALUES ('banner', ?)`,

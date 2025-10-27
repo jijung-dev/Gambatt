@@ -1,5 +1,5 @@
 import { MessageFlags } from "discord.js";
-import { getPagination, deletePagination } from "../../utils/PaginationStore.js";
+import { getPagination, deletePagination } from "#utils/PaginationStore.js";
 
 export default {
     id: "skip_roll",

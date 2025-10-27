@@ -6,6 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "imports": {
+    "#utils/*": "./utils/*",
+    "#commands/*": "./interactive/commands/*",
+    "#data": "./gamedata/database.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

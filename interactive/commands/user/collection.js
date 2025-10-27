@@ -1,17 +1,18 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import { rarityIcons } from "../../utils/data_handler.js";
+import { rarityIcons } from "#utils/data_handler.js";
+import { setPagination, deletePagination } from "#utils/PaginationStore.js";
+import { getCharacter } from "#utils/characterdata_handler.js";
+import { getPageButtons } from "#utils/PaginationButtons.js";
 import {
-    setPagination,
-    deletePagination,
-} from "../../utils/PaginationStore.js";
-import { GetCharacter } from "../../utils/characterdata_handler.js";
-import { GetPageButtons } from "../../utils/PaginationButtons.js";
-import { parseViewArgs } from "./view.js";
+    getCharactersFromCollection,
+    getCharacterFromCollection,
+} from "#utils/userdata_handler.js";
 import {
-    GetCharactersFromCollection,
-    GetCharacterFromCollection,
-} from "../../utils/userdata_handler.js";
-import { toCodeBlock, renderXpBarEmoji, getUser } from "../../utils/data_utils.js";
+    toCodeBlock,
+    renderXpBarEmoji,
+    getUser,
+    parseArgs,
+} from "#utils/data_utils.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -57,7 +58,7 @@ export default {
         const series = interaction.options.getString("series");
         const rarity = interaction.options.getString("rarity");
 
-        await ReplyCollection(interaction, {
+        await replyCollection(interaction, {
             charvalue,
             charname,
             edition,
@@ -67,13 +68,15 @@ export default {
     },
 
     async executeMessage(message, args) {
-        const characterValue = parseViewArgs(args);
-        await ReplyCollection(message, characterValue);
+        const characterValue = parseArgs(args);
+        await replyCollection(message, characterValue);
     },
+    help: getHelpEmbed(),
 };
 
-// -------------------- Helpers --------------------
-async function ReplyCollection(
+// ------------------------------ MAIN ------------------------------
+
+async function replyCollection(
     target,
     { charvalue, charname, edition, series, rarity, mention }
 ) {
@@ -82,7 +85,7 @@ async function ReplyCollection(
         return message.reply("⚠️ Invalid user ID.");
     }
 
-    const chars = await GetCharactersFromCollection(
+    const chars = await getCharactersFromCollection(
         user,
         charvalue,
         charname,
@@ -92,13 +95,14 @@ async function ReplyCollection(
     );
 
     if (chars.length === 0) {
-        return target.reply({ embeds: [GetFailedEmbed(user)] });
+        return target.reply({ embeds: [getFailedEmbed(user)] });
     } else {
-        return SendMatchList(target, chars, user);
+        return sendMatchList(target, chars, user);
     }
 }
+// ------------------------------ EMBEDS ------------------------------
 
-function GetFailedEmbed(user) {
+function getFailedEmbed(user) {
     return new EmbedBuilder()
         .setAuthor({
             name: `${user.username}'s collection`,
@@ -108,9 +112,24 @@ function GetFailedEmbed(user) {
         .setColor("#858585");
 }
 
-async function SendMatchList(target, charactersMatch, mentionUser) {
+function getHelpEmbed() {
+    const helpEmbed = new HelpEmbedBuilder()
+        .withName("collection")
+        .withDescription("View your collection")
+        .withAliase(["c", "collection"])
+        .withExampleUsage(
+            "$collection @JiJung n:Ninomae Ina'nis c:ninomae_inanis s:Hololive r:sr e:Normal"
+        )
+        .withUsage(
+            "**/collection** `<@user | u:[user_id]>` `<c:[Character Value]>` `<n:[Character Name]>` `<s:[Series]>` `<r:[rarity]>` `<e:[Edition]>`"
+        )
+        .build();
+    return helpEmbed;
+}
+
+async function sendMatchList(target, charactersMatch, mentionUser) {
     const user = mentionUser;
-    const embeds = await GetMatchListEmbeds(charactersMatch, user);
+    const embeds = await getMatchListEmbeds(charactersMatch, user);
     let currentPage = 0;
 
     const reply = await target.reply({
@@ -118,7 +137,7 @@ async function SendMatchList(target, charactersMatch, mentionUser) {
         components:
             embeds.length > 1
                 ? [
-                      GetPageButtons(
+                      getPageButtons(
                           true,
                           embeds.length === 1,
                           target.user || target.author
@@ -140,21 +159,21 @@ async function SendMatchList(target, charactersMatch, mentionUser) {
     }
 }
 
-async function GetMatchListEmbeds(charactersMatch, user) {
+async function getMatchListEmbeds(charactersMatch, user) {
     const entries = await Promise.all(
         charactersMatch.map(async (id) => {
-            const character = await GetCharacter(id);
-            const level = await GetCharacterFromCollection(user, id);
+            const character = await getCharacter(id);
+            const level = await getCharacterFromCollection(user, id);
             return { character, level };
         })
     );
 
     return entries.map((entry, i) =>
-        GetCharacterEmbed(entry, user, i, entries.length)
+        getCharacterEmbed(entry, user, i, entries.length)
     );
 }
 
-function GetCharacterEmbed(characterObject, user, pageIndex, totalPages) {
+function getCharacterEmbed(characterObject, user, pageIndex, totalPages) {
     const character = characterObject.character;
     const rarityIcon = rarityIcons[character.rarity];
 

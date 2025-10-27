@@ -1,15 +1,15 @@
 import { ButtonBuilder, ButtonStyle } from "discord.js";
-import { ReplyRoll10 } from "../commands/roll10.js";
+import { replyRoll10 } from "#commands/roll/roll10.js";
 
 export default {
     id: "roll10",
 
     async execute(interaction, client) {
-        await ReplyRoll10(interaction);
+        await replyRoll10(interaction);
     },
 };
 
-export function GetRoll10(userId) {
+export function getRoll10(userId) {
     return new ButtonBuilder()
         .setCustomId(`roll10|${userId}`)
         .setLabel("Roll X10")
