@@ -81,6 +81,7 @@ export default {
         await replyAddChar(message, characterValue);
     },
     help: getFailedEmbed(),
+    type: "Character",
 };
 
 // ------------------------------ MAIN ------------------------------

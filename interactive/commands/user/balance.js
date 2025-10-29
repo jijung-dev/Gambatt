@@ -2,6 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { currencyIcon } from "#utils/data_handler.js";
 import { getPlayerData } from "#utils/userdata_handler.js";
 import { getUser } from "#utils/data_utils.js";
+import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -24,17 +25,17 @@ export default {
     async executeMessage(message, args) {
         let user;
 
-        if (!args?.[0]) {
-            user = await getUser(message, args[0]);
-        }
+        user = await getUser(message, args?.[0]);
+
         await replyBalance(message, user);
     },
     help: getHelpEmbed(),
+    type: "User",
 };
 
 async function replyBalance(target, user) {
     if (!user) {
-        return message.reply("⚠️ Invalid user ID.");
+        return target.reply("⚠️ Invalid user ID.");
     }
     const embed2 = await getBalanceEmbed(user);
     return target.reply({

@@ -28,6 +28,7 @@ export default {
         await replyDeleteChar(message, characterValue);
     },
     help: getFailedEmbed(),
+    type: "Character",
 };
 
 // ------------------------------ MAIN ------------------------------

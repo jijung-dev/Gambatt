@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
 import { SetPrefix } from "#utils/data_handler.js";
+import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
 
 export default {
     data: new SlashCommandBuilder()

@@ -70,6 +70,7 @@ export default {
         await replyView(message, characterValue);
     },
     help: getFailedEmbed(),
+    type: "Character",
 };
 
 // ------------------------------ MAIN ------------------------------
@@ -117,7 +118,7 @@ function getFailedEmbed() {
 async function sendMatchList(target, charactersMatch) {
     const user = await getUser(target);
     if (!user) {
-        return message.reply("⚠️ Invalid user ID.");
+        return target.reply("⚠️ Invalid user ID.");
     }
     const embeds = await getMatchListEmbeds(charactersMatch);
     let currentPage = 0;

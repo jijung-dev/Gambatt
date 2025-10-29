@@ -3,7 +3,6 @@ import { GetPrefix } from "#utils/data_handler.js";
 export default {
     name: "messageCreate",
     async execute(client, message) {
-
         if (message.author.bot) return;
 
         const prefix = await GetPrefix(message.guild.id);
@@ -25,9 +24,19 @@ export default {
             );
         }
 
+        //mod-only command checks
+        if (
+            !message.member.permissions.has("ManageGuild") &&
+            command?.default?.type == "Mod"
+        ) {
+            return message.reply(
+                "⛔ You don't have permission to use this command!"
+            );
+        }
+
         /* -------------------- Message Command Handler -------------------- */
         const handler =
-            command?.executeMessage ||          // normal
+            command?.executeMessage || // normal
             command?.default?.executeMessage || // wrapped under `.default`
             null;
 

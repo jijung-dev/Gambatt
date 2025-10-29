@@ -13,6 +13,7 @@ import {
     getUser,
     parseArgs,
 } from "#utils/data_utils.js";
+import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -72,6 +73,7 @@ export default {
         await replyCollection(message, characterValue);
     },
     help: getHelpEmbed(),
+    type: "User",
 };
 
 // ------------------------------ MAIN ------------------------------
@@ -82,7 +84,7 @@ async function replyCollection(
 ) {
     const user = await getUser(target, mention);
     if (!user) {
-        return message.reply("⚠️ Invalid user ID.");
+        return target.reply("⚠️ Invalid user ID.");
     }
 
     const chars = await getCharactersFromCollection(

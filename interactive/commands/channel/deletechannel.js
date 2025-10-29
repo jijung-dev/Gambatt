@@ -34,6 +34,7 @@ export default {
         await replyDeleteChannel(message, channel_name);
     },
     help: getFailedEmbed(),
+    type: "Channel",
 };
 
 // ------------------------------ MAIN ------------------------------
@@ -45,7 +46,7 @@ async function replyDeleteChannel(target, channame) {
 
     const user = await getUser(target);
     if (!user) {
-        return message.reply("⚠️ Invalid user ID.");
+        return target.reply("⚠️ Invalid user ID.");
     }
 
     // Check for multiple matches

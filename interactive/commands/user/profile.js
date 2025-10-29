@@ -22,17 +22,18 @@ export default {
     async executeMessage(message, args) {
         let user;
 
-        if (!args?.[0]) {
+        if (args?.[0]) {
             user = await getUser(message, args[0]);
         }
         await ReplyProfile(message, user);
     },
+    type: "User",
 };
 
 // -------------------- Helpers --------------------
 async function ReplyProfile(target, user) {
     if (!user) {
-        return message.reply("⚠️ Invalid user ID.");
+        return target.reply("⚠️ Invalid user ID.");
     }
     const embed2 = GetProfileEmbed(user);
     return target.reply({

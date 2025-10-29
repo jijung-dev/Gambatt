@@ -10,6 +10,7 @@ import {
 import { COSTPERROLL, getUser, toCodeBlock, wait } from "#utils/data_utils.js";
 import { getEmbedNotEnoughBalance } from "#utils/errorembeds.js";
 import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
+import { isRolling } from "#utils/RollingStore.js";
 
 export default {
     data: new SlashCommandBuilder().setName("roll").setDescription("Roll once"),
@@ -24,6 +25,7 @@ export default {
         await replyRoll(message);
     },
     help: getHelpEmbed(),
+    type: "Roll",
 };
 
 // =============================== MAIN ===============================
@@ -31,7 +33,7 @@ export default {
 export async function replyRoll(target) {
     const user = await getUser(target);
     if (!user) {
-        return message.reply("⚠️ Invalid user ID.");
+        return target.reply("⚠️ Invalid user ID.");
     }
 
     const player = await getPlayerOrFail(target, user);
@@ -65,7 +67,7 @@ export async function replyRoll(target) {
     const character = await getCharacter(characterValue.id);
     await wait(200);
 
-    const collection = await addCharacterToCollection(
+    const charStatus = await addCharacterToCollection(
         user,
         character.value,
         character.rarity
@@ -73,20 +75,7 @@ export async function replyRoll(target) {
 
     await reduceBalance(user, COSTPERROLL);
 
-    const rarityValue = getRarityValue(character.rarity);
-    const titleStatus = collection.isFirstTime
-        ? "🆕 New!"
-        : collection.isLevelUp
-        ? "⬆️ Level Up!"
-        : "🔁 Duplicate";
-
-    const finalEmbed = getCharacterEmbed(
-        user,
-        character,
-        titleStatus,
-        collection,
-        rarityValue
-    );
+    const finalEmbed = getCharacterEmbed(user, character, charStatus);
 
     await replyMessage.edit({ embeds: [finalEmbed] });
 
@@ -119,20 +108,26 @@ function getHelpEmbed() {
     return helpEmbed;
 }
 
-function getCharacterEmbed(user, character, status, collection, rarityValue) {
+function getCharacterEmbed(user, character, charStatus) {
     const rarityIcon = rarityIcons[character.rarity];
     const fields = [
         { name: "Character", value: toCodeBlock(character.label) },
         { name: "Series", value: toCodeBlock(character.series) },
         { name: "Edition", value: toCodeBlock(character.edition) },
     ];
+    const rarityValue = getRarityValue(character.rarity);
+    const status = charStatus.isFirstTime
+        ? "🆕 New!"
+        : charStatus.isLevelUp
+        ? "⬆️ Level Up!"
+        : "🔁 Duplicate";
 
-    if (!collection.isFirstTime) {
-        if (collection.isLevelUp) {
+    if (!charStatus.isFirstTime) {
+        if (charStatus.isLevelUp) {
             fields.push({
                 name: "Level Up",
-                value: `Lv.${collection.character.level - 1} → **Lv.${
-                    collection.character.level
+                value: `Lv.${charStatus.character.level - 1} → **Lv.${
+                    charStatus.character.level
                 }**`,
             });
         } else {

@@ -43,6 +43,7 @@ export default {
             /* -------------------- Slash Command Handler -------------------- */
             if (!interaction.isChatInputCommand()) return;
 
+            //disable command checks
             const commandName = interaction.commandName;
             if (client.disabledCommands?.has(commandName)) {
                 return interaction.reply({
@@ -55,6 +56,18 @@ export default {
             if (!command) {
                 console.error(`No command matching ${commandName} was found.`);
                 return;
+            }
+
+            //mod-only command checks
+            if (
+                !interaction.member.permissions.has("ManageGuild") &&
+                command.default?.type == "Mod"
+            ) {
+                return interaction.reply({
+                    content:
+                        "⛔ You don't have permission to use this command!",
+                    flags: MessageFlags.Ephemeral,
+                });
             }
             await command.default.execute(interaction);
 

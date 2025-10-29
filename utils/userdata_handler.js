@@ -104,7 +104,21 @@ export async function reduceBalance(user, amount) {
     const player = await getPlayerData(user);
     if (!player) return null;
 
-    player.balance -= amount;
+    player.balance = Number(player.balance) - Number(amount);
+    await db.run(
+        "UPDATE users SET balance = ? WHERE id = ?",
+        player.balance,
+        user.id
+    );
+
+    return player.balance;
+}
+
+export async function increaseBalance(user, amount) {
+    const player = await getPlayerData(user);
+    if (!player) return null;
+
+    player.balance = Number(player.balance) + Number(amount);
     await db.run(
         "UPDATE users SET balance = ? WHERE id = ?",
         player.balance,
@@ -207,16 +221,57 @@ export async function addCharacterToCollection(user, characterValue, rarity) {
     return { isFirstTime, isLevelUp, character };
 }
 
+export async function removeCharacterFromCollection(user, characterValue) {
+    if (user.bot) return false;
+
+    const hasCharacter = await hasCharacterInCollection(user, characterValue);
+    if (!hasCharacter) {
+        console.warn(
+            `[DB] Character ${characterValue} not found in ${user.username}'s collection`
+        );
+        return false;
+    }
+
+    const result = await db.run(
+        `DELETE FROM user_characters WHERE user_id = ? AND character_id = ?`,
+        user.id,
+        characterValue
+    );
+
+    return result.changes > 0;
+}
+
+export async function hasCharacterInCollection(user, characterValue) {
+    if (user.bot) return false;
+
+    const row = await db.get(
+        `SELECT 1 FROM user_characters WHERE user_id = ? AND character_id = ? LIMIT 1`,
+        user.id,
+        characterValue
+    );
+
+    return !!row;
+}
+
 export async function getCharacterFromCollection(user, characterValue) {
     if (user.bot) return null;
+
+    const hasCharacter = await hasCharacterInCollection(user, characterValue);
+    if (!hasCharacter) {
+        return { level: -1 };
+    }
+
     const row = await db.get(
         `SELECT level, xp_now, xp_max FROM user_characters WHERE user_id = ? AND character_id = ?`,
         user.id,
         characterValue
     );
-    return row
-        ? { level: row.level, xp_now: row.xp_now, xp_max: row.xp_max }
-        : { level: -1 };
+
+    return {
+        level: row.level,
+        xp_now: row.xp_now,
+        xp_max: row.xp_max,
+    };
 }
 
 export async function getCharactersFromCollection(

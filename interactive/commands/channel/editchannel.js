@@ -79,6 +79,7 @@ export default {
         await replyEditChannel(message, characterValue);
     },
     help: getFailedEmbed(),
+    type: "Channel",
 };
 
 // ------------------------------ MAIN ------------------------------
@@ -104,7 +105,7 @@ async function replyEditChannel(
 
     const user = await getUser(target);
     if (!user) {
-        return message.reply("⚠️ Invalid user ID.");
+        return target.reply("⚠️ Invalid user ID.");
     }
     // Check for multiple matches
     const matches = await getChannel(user, channame);

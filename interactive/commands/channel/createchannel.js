@@ -86,6 +86,7 @@ export default {
     },
 
     help: getFailedEmbed(),
+    type: "Channel",
 };
 
 // ------------------------------ MAIN ------------------------------
@@ -120,7 +121,7 @@ async function replyCreateChannel(
 
     const user = await getUser(target);
     if (!user) {
-        return message.reply("⚠️ Invalid user ID.");
+        return target.reply("⚠️ Invalid user ID.");
     }
 
     // Channel duplication check

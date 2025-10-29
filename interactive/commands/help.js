@@ -25,6 +25,7 @@ export default {
     },
 
     help: null,
+    type: "Help",
 };
 
 /* -------------------- Main Entry -------------------- */
@@ -55,31 +56,56 @@ function findCommand(commands, name) {
 }
 
 /* -------------------- Command List Embed -------------------- */
+
 function sendCommandList(target, commands) {
     const unique = new Map();
 
+    // Collect unique commands
     for (const [name, cmdObj] of commands) {
         const cmd = cmdObj.default || cmdObj;
         if (!unique.has(cmd.name)) unique.set(cmd.name, cmd);
     }
 
-    const description = Array.from(unique.values())
-        .map(
-            (cmd) =>
-                `**/${cmd.name}**${
-                    cmd.aliases?.length
-                        ? ` (${[
-                              ...(cmd.aliases?.map((a) => `\`${a}\``) || []),
-                          ].join(", ")})`
-                        : ""
-                }: ${cmd.data?.description || "No description"}`
-        )
-        .join("\n");
+    // Group commands by type
+    const grouped = {};
+    for (const cmd of unique.values()) {
+        const type = cmd.type || "Other";
+        if (!grouped[type]) grouped[type] = [];
+        grouped[type].push(cmd);
+    }
+
+    // Define desired order
+    const typeOrder = ["Mod", "Other"];
+
+    // Sort entries: types not in typeOrder appear first
+    const sortedEntries = Object.entries(grouped).sort(([aType], [bType]) => {
+        const aIndex = typeOrder.indexOf(aType);
+        const bIndex = typeOrder.indexOf(bType);
+
+        // Types not in the list → index -1
+        if (aIndex === -1 && bIndex === -1) {
+            return aType.localeCompare(bType); // both not listed → alphabetical
+        } else if (aIndex === -1) {
+            return -1; // a not listed → comes first
+        } else if (bIndex === -1) {
+            return 1; // b not listed → comes first
+        } else {
+            return aIndex - bIndex; // both listed → use array order
+        }
+    });
+
+    // Build fields by type
+    const fields = sortedEntries
+        .filter(([type]) => type !== "Help")
+        .map(([type, cmds]) => {
+            const value = cmds.map((cmd) => `\`${cmd.name}\``).join(" ");
+            return { name: `${type} Commands`, value, inline: false };
+        });
 
     const embed = new EmbedBuilder()
-        .setTitle("Command List")
-        .setDescription("Type: `$help <command>` for more info!")
-        .addFields({ name: "Commands", value: description, inline: false })
+        .setTitle("📜 Command List")
+        .setDescription("Use `/help <command>` for more info!")
+        .addFields(fields)
         .setFooter({ text: "Anything in <> is optional" })
         .setColor("#00BFFF");
 

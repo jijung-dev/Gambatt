@@ -16,6 +16,7 @@ import { setPagination, deletePagination } from "#utils/PaginationStore.js";
 import { getPageButtons } from "#utils/PaginationButtons.js";
 import { COSTPERROLL, getUser, toCodeBlock, wait } from "#utils/data_utils.js";
 import { startRoll, endRoll, isRolling } from "#utils/RollingStore.js";
+import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
 
 // =============================== COMMAND ===============================
 
@@ -34,6 +35,7 @@ export default {
         await replyRoll10(message);
     },
     help: getHelpEmbed(),
+    type: "Roll",
 };
 
 // =============================== MAIN ===============================
@@ -41,7 +43,7 @@ export default {
 export async function replyRoll10(target) {
     const user = await getUser(target);
     if (!user) {
-        return message.reply("⚠️ Invalid user ID.");
+        return target.reply("⚠️ Invalid user ID.");
     }
 
     const player = await getPlayerOrFail(target, user);

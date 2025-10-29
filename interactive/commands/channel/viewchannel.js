@@ -42,6 +42,7 @@ export default {
         await replyChannel(message, channel);
     },
     help: getHelpEmbed(),
+    type: "Channel",
 };
 
 // ------------------------------ MAIN ------------------------------
@@ -49,7 +50,7 @@ export default {
 async function replyChannel(target, { channame, mention }) {
     const user = await getUser(target, mention);
     if (!user) {
-        return message.reply("⚠️ Invalid user ID.");
+        return target.reply("⚠️ Invalid user ID.");
     }
 
     let channels;
