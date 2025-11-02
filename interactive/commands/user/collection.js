@@ -69,7 +69,16 @@ export default {
     },
 
     async executeMessage(message, args) {
-        const characterValue = parseArgs(args);
+        const { mention, character } = parseArgs(args);
+
+        const characterValue = {
+            charvalue: character.charvalue,
+            charname: character.charname,
+            edition: character.edition,
+            series: character.series,
+            rarity: character.rarity,
+            mention: mention,
+        };
         await replyCollection(message, characterValue);
     },
     help: getHelpEmbed(),
@@ -123,7 +132,7 @@ function getHelpEmbed() {
             "$collection @JiJung n:Ninomae Ina'nis c:ninomae_inanis s:Hololive r:sr e:Normal"
         )
         .withUsage(
-            "**/collection** `<@user | u:[user_id]>` `<c:[Character Value]>` `<n:[Character Name]>` `<s:[Series]>` `<r:[rarity]>` `<e:[Edition]>`"
+            "**/collection** `<@user | u:[user_id]>` `<c:[character_value]>` `<n:[Character Name]>` `<s:[Series]>` `<r:[rarity]>` `<e:[Edition]>`"
         )
         .build();
     return helpEmbed;

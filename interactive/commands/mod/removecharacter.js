@@ -89,7 +89,7 @@ function getHelpEmbed() {
         .withAliase(["removecharacter"])
         .withExampleUsage("$removecharacter @JiJung ninomae_inanis")
         .withUsage(
-            "**/removecharacter** `@user | u:[user_id]` `[Character Value]`"
+            "**/removecharacter** `@user | u:[user_id]` `[character_value]`"
         )
         .build();
     return helpEmbed;

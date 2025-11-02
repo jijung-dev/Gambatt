@@ -42,7 +42,7 @@ export class HelpEmbedBuilder {
             .setTitle(this.title || "Help")
             .setColor(this.color)
             .setFooter({
-                text: "Anything in <> is optional, anything in [] is customizable",
+                text: "Anything in <> is optional, [] is customizable, and # means supports <, >, <=, >=, =",
             });
 
         if (this.description) {

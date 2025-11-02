@@ -53,98 +53,152 @@ export async function getUser(target, mention = null) {
 }
 
 /**
- * Parses prefixed arguments (e.g., `n:`, `e:`, `s:`) into a structured object.
+ * Parses prefixed arguments (e.g., `n:`, `e:`, `s:`) into categorized structured objects.
  *
  * @param {string[]} args - The argument list to parse.
  * @returns {{
- *   charname: string|null,
- *   edition: string|null,
- *   series: string|null,
- *   channame: string|null,
- *   channewname: string|null,
- *   rarity: string|null,
- *   charvalue: string|null,
- *   image_link: string|null,
- *   profile_picture: string|null,
- *   banner_picture: string|null,
- *   color: string|null,
+ *   character: object,
+ *   channel: object,
+ *   gear: object,
  *   mention: string|null
- * }} Parsed argument object with normalized fields.
+ * }}
  */
 export function parseArgs(args) {
-    args = args.join(" ").split(/\s+/).filter(Boolean);
+    const tokens = args.join(" ").split(/\s+/).filter(Boolean);
 
     const parts = {
+        character: parseCharacter(tokens),
+        channel: parseChannel(tokens),
+        gear: parseGear(tokens),
+        mention: parseMention(tokens),
+    };
+
+    return parts;
+}
+
+/* ---------------- CHARACTER PARSER ---------------- */
+function parseCharacter(tokens) {
+    const result = {
         charname: [],
         edition: [],
         series: [],
-        channame: [],
-        channewname: [],
         rarity: null,
         charvalue: null,
         image_link: null,
-        profile_picture: null,
-        banner_picture: null,
-        color: null,
-        mention: null,
     };
 
     const prefixMap = {
         "n:": "charname",
         "e:": "edition",
         "s:": "series",
-        "cn:": "channame",
-        "cnn:": "channewname",
         "r:": "rarity",
         "c:": "charvalue",
         "l:": "image_link",
+    };
+
+    return parseWithPrefixes(tokens, result, prefixMap, [
+        "charname",
+        "edition",
+        "series",
+    ]);
+}
+
+/* ---------------- CHANNEL PARSER ---------------- */
+function parseChannel(tokens) {
+    const result = {
+        channame: [],
+        channewname: [],
+        charvalue: null,
+        profile_picture: null,
+        banner_picture: null,
+        color: null,
+    };
+
+    const prefixMap = {
+        "cn:": "channame",
+        "c:": "charvalue",
+        "cnn:": "channewname",
         "pl:": "profile_picture",
         "bl:": "banner_picture",
         "ec:": "color",
-        "<@": "mention",
-        "u:": "mention",
     };
 
-    let mode = null;
+    return parseWithPrefixes(tokens, result, prefixMap, [
+        "channame",
+        "channewname",
+    ]);
+}
 
-    for (let rawPart of args) {
-        const part = rawPart.trim();
+/* ---------------- GEAR PARSER ---------------- */
+function parseGear(tokens) {
+    const result = {
+        gearid: null,
+        gearname: [],
+        tier: null,
+        image_link: null,
+        growth_rate: null,
+        mood_down_rate: null,
+        supa_rate: null,
+        stamina_cost_per_hour: null,
+    };
+
+    const prefixMap = {
+        "gi:": "gearid",
+        "gn:": "gearname",
+        "t:": "tier",
+        "gr:": "growth_rate",
+        "mdr:": "mood_down_rate",
+        "sr:": "supa_rate",
+        "l:": "image_link",
+        "scph:": "stamina_cost_per_hour",
+    };
+
+    return parseWithPrefixes(tokens, result, prefixMap, ["gearname"]);
+}
+
+/* ---------------- MENTION PARSER ---------------- */
+function parseMention(tokens) {
+    for (const token of tokens) {
+        if (token.startsWith("<@") || token.startsWith("u:")) {
+            return token.replace(/[<@>]/g, "").trim() || null;
+        }
+    }
+    return null;
+}
+
+/* ---------------- GENERIC PARSER ---------------- */
+function parseWithPrefixes(tokens, baseObj, prefixMap, joinableKeys = []) {
+    let currentArrayKey = null;
+    const result = structuredClone(baseObj);
+
+    for (const raw of tokens) {
+        const part = raw.trim();
         if (!part) continue;
 
         const prefix = Object.keys(prefixMap).find((p) => part.startsWith(p));
         if (prefix) {
             const key = prefixMap[prefix];
-            let value = part.slice(prefix.length).trim();
+            const value = part.slice(prefix.length).trim();
 
-            if (key === "mention") {
-                value = value.replace(/[<@>]/g, "");
-            }
-
-            if (Array.isArray(parts[key])) {
-                mode = key;
-                parts[key].push(value);
+            if (Array.isArray(result[key])) {
+                result[key].push(value);
+                currentArrayKey = key;
             } else {
-                mode = null;
-                parts[key] = value || null;
+                result[key] = value || null;
+                currentArrayKey = null;
             }
-        } else if (mode && Array.isArray(parts[mode])) {
-            parts[mode].push(part);
+        } else if (currentArrayKey && Array.isArray(result[currentArrayKey])) {
+            result[currentArrayKey].push(part);
         }
     }
 
-    for (const key of [
-        "charname",
-        "edition",
-        "series",
-        "channame",
-        "channewname",
-    ]) {
-        if (Array.isArray(parts[key])) {
-            parts[key] = parts[key].join(" ").trim() || null;
+    for (const key of joinableKeys) {
+        if (Array.isArray(result[key])) {
+            result[key] = result[key].join(" ").trim() || null;
         }
     }
 
-    return parts;
+    return result;
 }
 
 /**

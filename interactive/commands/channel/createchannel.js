@@ -80,8 +80,15 @@ export default {
     },
 
     async executeMessage(message, args) {
-        const characterValue = parseArgs(args);
+        const { channel } = parseArgs(args);
 
+        const characterValue = {
+            channame: channel.channame,
+            charvalue: channel.charvalue,
+            profile_picture: channel.profile_picture,
+            banner_picture: channel.banner_picture,
+            color: channel.color,
+        };
         await replyCreateChannel(message, characterValue);
     },
 
@@ -167,7 +174,7 @@ function getFailedEmbed() {
             "$createchannel cn:Ninomae Ina'nis c:ninomae_inanis ec:#ffffff pl:profile bl:banner"
         )
         .withUsage(
-            "**/createchannel** `cn:[Channel Name]` `c:[Character Value]` `ec:[Embed Color]` `pl:[Profile Image Link]` `bl:[Banner Image Link]`"
+            "**/createchannel** `cn:[Channel Name]` `c:[character_value]` `ec:[#embed_color]` `pl:[profile_link.com]` `bl:[banner_link.com]`"
         )
         .build();
     return helpEmbed;

@@ -23,6 +23,54 @@ const rarityIcons = {
     },
 };
 
+const tierIcons = {
+    common: {
+        id: "1433506049876430898",
+        image: "https://cdn.discordapp.com/emojis/1433506049876430898.png",
+        emoji: "<:common:1433506049876430898>",
+        color: "#bbbbbb",
+    },
+    uncommon: {
+        id: "1433506047024431164",
+        image: "https://cdn.discordapp.com/emojis/1433506047024431164.png",
+        emoji: "<:uncommon:1433506047024431164>",
+        color: "#02db02",
+    },
+    rare: {
+        id: "1433506044574957783",
+        image: "https://cdn.discordapp.com/emojis/1433506044574957783.png",
+        emoji: "<:rare:1433506044574957783>",
+        color: "#02ffff",
+    },
+    epic: {
+        id: "1433506041940676750",
+        image: "https://cdn.discordapp.com/emojis/1433506041940676750.png",
+        emoji: "<:epic:1433506041940676750>",
+        color: "#da02da",
+    },
+    legendary: {
+        id: "1433506039403384892",
+        image: "https://cdn.discordapp.com/emojis/1433506039403384892.png",
+        emoji: "<:legendary:1433506039403384892>",
+        color: "#ff8b2c",
+    },
+    custom_made: {
+        id: "1433506036643532951",
+        image: "https://cdn.discordapp.com/emojis/1433506036643532951.png",
+        emoji: "<:custom:1433506036643532951>",
+        color: "#ff4844",
+    },
+};
+
+const tierMap = {
+    1: "common",
+    2: "uncommon",
+    3: "rare",
+    4: "epic",
+    5: "legendary",
+    6: "custom_made",
+};
+
 const currencyIcon = {
     cube: {
         id: "1423067106441691146",
@@ -44,4 +92,4 @@ async function GetPrefix(guildID) {
     return allPrefixes[guildID] || ".";
 }
 
-export { rarityIcons, currencyIcon, SetPrefix, GetPrefix };
+export { tierMap, tierIcons, rarityIcons, currencyIcon, SetPrefix, GetPrefix };

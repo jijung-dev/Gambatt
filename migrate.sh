@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS user_items (
 CREATE TABLE IF NOT EXISTS gears (
     id TEXT PRIMARY KEY,
     label TEXT,
+    image TEXT,
     tier INTEGER DEFAULT 0,
     growth_rate REAL DEFAULT 0,
     mood_down_rate REAL DEFAULT 0,
@@ -87,9 +88,7 @@ column_exists() {
 
 # Helper: add column
 check_and_add() {
-  if column_exists "$1" "$2"; then
-    echo "[DB] Column '$2' exists in '$1'"
-  else
+  if ! column_exists "$1" "$2"; then
     echo "[DB] Adding column '$2' to '$1'"
     sqlite3 "$DB" "ALTER TABLE $1 ADD COLUMN $3;"
   fi
@@ -170,6 +169,7 @@ apply_table_schema "user_items" \
 apply_table_schema "gears" \
   "id:id TEXT" \
   "label:label TEXT" \
+  "image:image TEXT" \
   "tier:tier INTEGER DEFAULT 0"\
   "growth_rate:growth_rate REAL DEFAULT 0"\
   "mood_down_rate:mood_down_rate REAL DEFAULT 0"\

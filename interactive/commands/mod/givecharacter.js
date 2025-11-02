@@ -1,5 +1,8 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import { addCharacterToCollection, getRarityValue } from "#utils/userdata_handler.js";
+import {
+    addCharacterToCollection,
+    getRarityValue,
+} from "#utils/userdata_handler.js";
 import { getUser, toCodeBlock } from "#utils/data_utils.js";
 import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
 import { getCharacter, hasCharacter } from "#utils/characterdata_handler.js";
@@ -119,9 +122,7 @@ function getHelpEmbed() {
         .withDescription("Give a character to an user")
         .withAliase(["givecharacter"])
         .withExampleUsage("$givecharacter @JiJung ninomae_inanis")
-        .withUsage(
-            "**/givecharacter** `@user | u:[user_id]` `[Character Value]`"
-        )
+        .withUsage("**/givecharacter** `@user | [user_id]` `[character_value]`")
         .build();
     return helpEmbed;
 }

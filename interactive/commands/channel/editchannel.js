@@ -75,7 +75,15 @@ export default {
     },
 
     async executeMessage(message, args) {
-        const characterValue = parseArgs(args);
+        const { channel } = parseArgs(args);
+
+        const characterValue = {
+            channame: channel.channame,
+            channewname: channel.channewname,
+            profile_picture: channel.profile_picture,
+            banner_picture: channel.banner_picture,
+            color: channel.color,
+        };
         await replyEditChannel(message, characterValue);
     },
     help: getFailedEmbed(),
@@ -141,7 +149,7 @@ function getFailedEmbed() {
             "$editchannel cn:Ninomae Ina'nis cnn:NiNoMaE INAFF ec:#ffffff pl:new profile picture bl:new banner picture"
         )
         .withUsage(
-            "**/editchannel** `cn:[Channel Name]` `<cnn:[New Channel Name]>` `<ec:[New Embed Color]>` `<pl:[Profile Image Link]>` `<bl:[Banner Image Link]>`"
+            "**/editchannel** `cn:[Channel Name]` `<cnn:[New Channel Name]>` `<ec:[#embed_color]>` `<pl:[profile_link.com]>` `<bl:[Banner image_link.com]>`"
         )
         .build();
     return helpEmbed;

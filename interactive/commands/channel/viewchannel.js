@@ -38,8 +38,13 @@ export default {
     },
 
     async executeMessage(message, args) {
-        const channel = parseArgs(args);
-        await replyChannel(message, channel);
+        const { mention, channel } = parseArgs(args);
+
+        const channelValue = {
+            channame: channel.channame,
+            mention: mention,
+        };
+        await replyChannel(message, channelValue);
     },
     help: getHelpEmbed(),
     type: "Channel",

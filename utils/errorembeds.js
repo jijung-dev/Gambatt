@@ -62,6 +62,42 @@ export function getEmbedCharacterNotOwned(characterId) {
 }
 
 /**
+ * Get a failed embed for a character that already exist.
+ * @param  {string} gearId - gear value to show in embed.
+ * @returns {Embed}
+ */
+export function getEmbedGearAlreadyExist(gearId) {
+    return new EmbedBuilder()
+        .setTitle("❌ A Gear with that value is already exists")
+        .setDescription(`\`${gearId}\``)
+        .setColor("#f50000");
+}
+
+/**
+ * Get a failed embed for a character that doesn't exist.
+ * @param  {string} gearId - gear value to show in embed.
+ * @returns {Embed}
+ */
+export function getEmbedGearNotFound(gearId) {
+    return new EmbedBuilder()
+        .setTitle("❌ Gear not found")
+        .setDescription(`\`${gearId}\``)
+        .setColor("#f50000");
+}
+
+/**
+ * Get a failed embed for a character is not own by the user.
+ * @param  {string} gearId - gear value to show in embed.
+ * @returns {Embed}
+ */
+export function getEmbedGearNotOwned(gearId) {
+    return new EmbedBuilder()
+        .setTitle("❌ You don't own this gear")
+        .setDescription(`\`${gearId}\``)
+        .setColor("#f50000");
+}
+
+/**
  * Get a failed embed for link that is now allowed.
  * @returns {Embed}
  */

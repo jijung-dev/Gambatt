@@ -75,7 +75,7 @@ function getHelpEmbed() {
         .withDescription("Add balance to current user")
         .withAliase(["removebalance"])
         .withExampleUsage("$removebalance @JiJung 3000")
-        .withUsage("**/removebalance** `@user | u:[user_id]` `[Amount]`")
+        .withUsage("**/removebalance** `@user | [user_id]` `[Amount]`")
         .build();
     return helpEmbed;
 }

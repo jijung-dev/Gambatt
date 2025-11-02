@@ -76,7 +76,16 @@ export default {
     },
 
     async executeMessage(message, args) {
-        const characterValue = parseArgs(args);
+        const { character } = parseArgs(args);
+
+        const characterValue = {
+            charvalue: character.charvalue,
+            charname: character.charname,
+            edition: character.edition,
+            series: character.series,
+            rarity: character.rarity,
+            image_link: character.image_link,
+        };
 
         await replyAddChar(message, characterValue);
     },
@@ -140,7 +149,7 @@ function getFailedEmbed() {
             "$addchar c:ninomae_inanis n:Ninomae Ina'nis s:Hololive r:sr e:Normal l:image link"
         )
         .withUsage(
-            "**/addchar** `c:[Character Value]` `n:[Character Name]` `s:[Series]` `r:[rarity]` `e:[Edition]` `l:[Image Link]`"
+            "**/addchar** `c:[character_value]` `n:[Character Name]` `s:[Series]` `r:[rarity]` `e:[Edition]` `l:[image_link.com]`"
         )
         .build();
     return helpEmbed;

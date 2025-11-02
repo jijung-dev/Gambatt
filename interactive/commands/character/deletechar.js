@@ -56,7 +56,7 @@ function getFailedEmbed() {
         )
         .withAliase(["dc", "deletechar"])
         .withExampleUsage("$deletechar ninomae_inanis")
-        .withUsage("**/deletechar** `[Character Value]`")
+        .withUsage("**/deletechar** `[character_value]`")
         .build();
     return helpEmbed;
 }

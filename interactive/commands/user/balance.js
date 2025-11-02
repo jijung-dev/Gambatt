@@ -61,7 +61,7 @@ function getHelpEmbed() {
         .withDescription("View user current balance")
         .withAliase(["bal", "balance"])
         .withExampleUsage("$balance @JiJung")
-        .withUsage("**/balance** `<@user | u:[user_id]>`")
+        .withUsage("**/balance** `<@user | [user_id]>`")
         .build();
     return helpEmbed;
 }

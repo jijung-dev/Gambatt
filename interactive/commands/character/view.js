@@ -66,7 +66,15 @@ export default {
     },
 
     async executeMessage(message, args) {
-        const characterValue = parseArgs(args);
+        const { character } = parseArgs(args);
+
+        const characterValue = {
+            charvalue: character.charvalue,
+            charname: character.charname,
+            edition: character.edition,
+            series: character.series,
+            rarity: character.rarity,
+        };
         await replyView(message, characterValue);
     },
     help: getFailedEmbed(),
@@ -109,7 +117,7 @@ function getFailedEmbed() {
             "$view n:Ninomae Ina'nis c:ninomae_inanis s:Hololive r:sr e:Normal"
         )
         .withUsage(
-            "**/view** `<c:[Character Value]>` `<n:[Character Name]>` `<s:[Series]>` `<r:[rarity]>` `<e:[Edition]>`"
+            "**/view** `<c:[character_value]>` `<n:[Character Name]>` `<s:[Series]>` `<r:[rarity]>` `<e:[Edition]>`"
         )
         .build();
     return helpEmbed;

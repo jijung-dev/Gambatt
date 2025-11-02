@@ -81,7 +81,16 @@ export default {
     },
 
     async executeMessage(message, args) {
-        const characterValue = parseArgs(args);
+        const { character } = parseArgs(args);
+
+        const characterValue = {
+            charvalue: character.charvalue,
+            charname: character.charname,
+            edition: character.edition,
+            series: character.series,
+            rarity: character.rarity,
+            image_link: character.image_link,
+        };
         await replyEditChar(message, characterValue);
     },
     help: getFailedEmbed(),
@@ -132,7 +141,7 @@ function getFailedEmbed() {
             "$editchar c:ninomae_inanis n:Ninomae Ina'nis s:Hololive r:sr e:Normal l:image link"
         )
         .withUsage(
-            "**/editchar** `c:[Character Value]` `<n:[Character Name]>` `<s:[Series]>` `<r:[rarity]>` `<e:[Edition]>` `<l:[Image Link]>`"
+            "**/editchar** `c:[character_value]` `<n:[Character Name]>` `<s:[Series]>` `<r:[rarity]>` `<e:[Edition]>` `<l:[image_link.com]>`"
         )
         .build();
     return helpEmbed;
