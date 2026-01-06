@@ -10,7 +10,7 @@ import {
 import { COSTPERROLL, getUser, toCodeBlock, wait } from "#utils/data_utils.js";
 import { getEmbedNotEnoughBalance } from "#utils/errorembeds.js";
 import { HelpEmbedBuilder } from "#utils/HelpEmbedBuilder.js";
-import { isRolling } from "#utils/RollingStore.js";
+import { endRoll, isRolling, startRoll } from "#utils/RollingStore.js";
 
 export default {
     data: new SlashCommandBuilder().setName("roll").setDescription("Roll once"),

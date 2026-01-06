@@ -10,5 +10,8 @@
 # ignore config.json
 config.json
 
+# ignore .sh files
+*.sh
+
 #ignore node_modules
 node_modules/
