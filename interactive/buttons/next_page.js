@@ -1,6 +1,5 @@
 import { MessageFlags } from "discord.js";
-import { getPageButtons } from "#utils/PaginationButtons.js";
-import { getPagination } from "#utils/PaginationStore.js";
+import { getPageButtons, getPagination } from "#utils/pageSystem.js";
 
 export default {
     id: "next_page",
@@ -14,20 +13,20 @@ export default {
             });
         }
 
-        if (pagination.currentPage < pagination.embeds.length - 1) {
-            pagination.currentPage++;
+        pagination.currentPage = Math.min(
+            pagination.embeds.length - 1,
+            pagination.currentPage + 1
+        );
 
-            return interaction.update({
-                embeds: [pagination.embeds[pagination.currentPage]],
-                components: [
-                    getPageButtons(
-                        pagination.currentPage === 0,
-                        pagination.currentPage === pagination.embeds.length - 1,
-                        interaction.user,
-                        Boolean(pagination.finalEmbed)
-                    ),
-                ],
-            });
-        }
+        await interaction.update({
+            embeds: [pagination.embeds[pagination.currentPage]],
+            components: [
+                getPageButtons(
+                    pagination.currentPage === 0,
+                    pagination.currentPage === pagination.embeds.length - 1,
+                    interaction.user
+                ),
+            ],
+        });
     },
 };

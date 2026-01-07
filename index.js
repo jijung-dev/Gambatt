@@ -3,7 +3,6 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
 import { initDatabase } from "#data";
-import addbalance from "#commands/mod/addbalance.js";
 
 // ESM replacement for __dirname
 const __filename = fileURLToPath(import.meta.url);

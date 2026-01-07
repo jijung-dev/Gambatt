@@ -38,7 +38,7 @@ async function showHelp(target, commandName) {
 
     const command = findCommand(commands, commandName);
     if (!command) {
-        return target.reply(`❌ No command found for \`${commandName}\`.`);
+        return target.reply(`No command found for \`${commandName}\`.`);
     }
 
     const embed =
@@ -95,18 +95,19 @@ function sendCommandList(target, commands) {
     });
 
     // Build fields by type
+    const excludedTypes = new Set(["Help", "Test"]);
+
     const fields = sortedEntries
-        .filter(([type]) => type !== "Help")
+        .filter(([type]) => !excludedTypes.has(type))
         .map(([type, cmds]) => {
             const value = cmds.map((cmd) => `\`${cmd.name}\``).join(" ");
             return { name: `${type} Commands`, value, inline: false };
         });
 
     const embed = new EmbedBuilder()
-        .setTitle("📜 Command List")
+        .setTitle("Command List")
         .setDescription("Use `/help <command>` for more info!")
         .addFields(fields)
-        .setFooter({ text: "Anything in <> is optional" })
         .setColor("#00BFFF");
 
     return target.reply({ embeds: [embed] });

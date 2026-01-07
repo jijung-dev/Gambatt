@@ -2,7 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 
 // -------------------- BUTTON BUILDERS --------------------
 
-function getPrevButton(disabled = false, user) {
+export function getPrevButton(disabled = false, user) {
     return new ButtonBuilder()
         .setCustomId(`prev_page|${user.id}`)
         .setLabel("◀️")
@@ -10,7 +10,7 @@ function getPrevButton(disabled = false, user) {
         .setDisabled(disabled);
 }
 
-function getNextButton(disabled = false, user) {
+export function getNextButton(disabled = false, user) {
     return new ButtonBuilder()
         .setCustomId(`next_page|${user.id}`)
         .setLabel("▶️")
@@ -18,26 +18,25 @@ function getNextButton(disabled = false, user) {
         .setDisabled(disabled);
 }
 
-function getSkipButton(user) {
-    return new ButtonBuilder()
-        .setCustomId(`skip_roll|${user.id}`)
-        .setLabel("⏭️ Skip")
-        .setStyle(ButtonStyle.Secondary);
-}
-
-function getPageButtons(isFirstPage, isLastPage, user, hasFinal = false) {
+export function getPageButtons(isFirstPage, isLastPage, user) {
     const row = new ActionRowBuilder().addComponents(
         getPrevButton(isFirstPage, user),
         getNextButton(isLastPage, user)
     );
 
-    if (hasFinal) {
-        row.addComponents(getSkipButton(user));
-    }
-
     return row;
 }
 
-// -------------------- EXPORTS --------------------
+const paginationStore = new Map();
 
-export { getPrevButton, getNextButton, getSkipButton, getPageButtons };
+export function setPagination(messageId, data) {
+    paginationStore.set(messageId, data);
+}
+
+export function getPagination(messageId) {
+    return paginationStore.get(messageId);
+}
+
+export function deletePagination(messageId) {
+    paginationStore.delete(messageId);
+}

@@ -1,52 +1,69 @@
-import { GetPrefix } from "#utils/data_handler.js";
+import { getPrefix, isRestricted } from "#utils/data_handler.js";
+import { ErrorMessage } from "#utils/errorembeds.js";
+import { PermissionFlagsBits } from "discord.js";
 
 export default {
     name: "messageCreate",
     async execute(client, message) {
-        if (message.author.bot) return;
+        if (message.author.bot || !message.guild) return;
 
-        const prefix = await GetPrefix(message.guild.id);
-        if (!message.content.startsWith(prefix)) return;
+        const prefix = await getPrefix(message.guild.id);
+        if (!prefix || !message.content.startsWith(prefix)) return;
 
-        /* -------------------- Command Parse -------------------- */
-        const args = message.content.slice(prefix.length).trim().split(/ +/);
-        const commandName = args.shift()?.toLowerCase();
+        /* -------------------- Parse Command -------------------- */
+        const [rawCommand, ...args] = message.content
+            .slice(prefix.length)
+            .trim()
+            .split(/\s+/);
+
+        const commandName = rawCommand?.toLowerCase();
         if (!commandName) return;
 
-        /* -------------------- Command Fetch -------------------- */
+        /* -------------------- Fetch Command -------------------- */
         const command = client.commands.get(commandName);
+        if (!command) {
+            console.error(`❌ No command matching "${commandName}" was found.`);
+            return;
+        }
 
-        //disable command checks
-        const mainCommandName = command?.default?.name || command?.name;
-        if (mainCommandName && client.disabledCommands?.has(mainCommandName)) {
+        if (
+            (await isRestricted(message.guild.id, message.channel.id)) &&
+            command.default?.type != "Mod"
+        ) {
+            return message.reply({
+                content: "🚫 Commands are disabled in this channel.",
+            });
+        }
+
+        const mainName = command.default?.name ?? command.name;
+
+        /* -------------------- Disabled Command Check -------------------- */
+        if (mainName && client.disabledCommands?.has(mainName)) {
             return message.reply(
-                `❌ The command \`${mainCommandName}\` is not allowed right now.`
+                `❌ The command \`${mainName}\` is not allowed right now.`
             );
         }
 
-        //mod-only command checks
+        /* -------------------- Permission Check -------------------- */
         if (
-            !message.member.permissions.has("ManageGuild") &&
-            command?.default?.type == "Mod"
+            command.default?.type === "Mod" &&
+            !message.member?.permissions.has(PermissionFlagsBits.ManageGuild)
         ) {
             return message.reply(
                 "⛔ You don't have permission to use this command!"
             );
         }
 
-        /* -------------------- Message Command Handler -------------------- */
+        /* -------------------- Execute Message Command -------------------- */
         const handler =
-            command?.executeMessage || // normal
-            command?.default?.executeMessage || // wrapped under `.default`
-            null;
+            command.executeMessage ?? command.default?.executeMessage;
 
         if (!handler) return;
 
         try {
             await handler(message, args);
-        } catch (error) {
-            console.error(error);
-            await message.reply("❌ Error executing prefix command.");
+        } catch (err) {
+            await message.reply(ErrorMessage);
         }
     },
 };

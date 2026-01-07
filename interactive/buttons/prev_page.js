@@ -1,6 +1,5 @@
 import { MessageFlags } from "discord.js";
-import { getPageButtons } from "#utils/PaginationButtons.js";
-import { getPagination } from "#utils/PaginationStore.js";
+import { getPageButtons, getPagination } from "#utils/pageSystem.js";
 
 export default {
     id: "prev_page",
@@ -22,8 +21,7 @@ export default {
                 getPageButtons(
                     pagination.currentPage === 0,
                     pagination.currentPage === pagination.embeds.length - 1,
-                    interaction.user,
-                    Boolean(pagination.finalEmbed)
+                    interaction.user
                 ),
             ],
         });
