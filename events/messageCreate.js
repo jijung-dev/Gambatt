@@ -63,6 +63,7 @@ export default {
         try {
             await handler(message, args);
         } catch (err) {
+            console.log(err);
             await message.reply(ErrorMessage);
         }
     },

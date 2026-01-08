@@ -28,6 +28,7 @@ export default {
         );
 
         if (!success) {
+            console.log("[channel]" + ErrorMessage);
             return interaction.reply(ErrorMessage);
         }
 
@@ -49,6 +50,7 @@ export default {
         );
 
         if (!success) {
+            console.log("[channel]" + ErrorMessage);
             return message.reply(ErrorMessage);
         }
 

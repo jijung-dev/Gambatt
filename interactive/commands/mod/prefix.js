@@ -20,6 +20,7 @@ export default {
     async execute(interaction) {
         const newPrefix = interaction.options.getString("prefix");
         if (!setPrefix(interaction.guild.id, newPrefix)) {
+            console.log("[prefix]" + ErrorMessage);
             await interaction.reply(ErrorMessage);
         }
 
@@ -31,6 +32,7 @@ export default {
         if (!newPrefix) return message.reply("❌ Please provide a new prefix!");
 
         if (!setPrefix(message.guild.id, newPrefix)) {
+            console.log("[prefix]" + ErrorMessage);
             await interaction.reply(ErrorMessage);
         }
         await message.reply(`Prefix changed to: \`${newPrefix}\``);

@@ -48,5 +48,3 @@ export async function isRestricted(guildId, channelId) {
     const data = await perserverTable.get(guildId);
     return data?.restrict?.includes(channelId) ?? false;
 }
-
-

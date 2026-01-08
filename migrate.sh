@@ -9,14 +9,18 @@ echo "[DB] Migration start: $DB"
 # Ensure gamedata folder exists
 mkdir -p "$(dirname "$DB")"
 
-# # Initial table creation (safe if already exists)
-# sqlite3 "$DB" <<SQL
-# PRAGMA foreign_keys = ON;
+# Initial table creation (safe if already exists)
+sqlite3 "$DB" <<SQL
+PRAGMA foreign_keys = ON;
 
-# CREATE TABLE IF NOT EXISTS users (
-#     id TEXT PRIMARY KEY,
-#     balance INTEGER DEFAULT 0
-# );
+CREATE TABLE IF NOT EXISTS rooms (
+    id INTEGER PRIMARY KEY,
+    host INTEGER NOT NULL,
+    game INTEGER DEFAULT NULL,
+    member TEXT DEFAULT '[]'
+);
+
+SQL
 
 # CREATE TABLE IF NOT EXISTS user_characters (
 #     user_id TEXT,
@@ -181,11 +185,13 @@ apply_table_schema() {
 
 SCHEMA_TABLES=()
 
-# # Define table schemas
-# SCHEMA_TABLES+=("users")
-# apply_table_schema "users" \
-#   "id:id TEXT" \
-#   "balance:balance INTEGER DEFAULT 0"
+# Define table schemas
+SCHEMA_TABLES+=("rooms")
+apply_table_schema "rooms" \
+  "id:id INTEGER PRIMARY KEY" \
+  "host:host INTEGER NOT NULL"\
+  "game:game INTEGER DEFAULT NULL"\
+  "member:member TEXT DEFAULT '[]'"
 
 # SCHEMA_TABLES+=("user_characters")
 # apply_table_schema "user_characters" \
