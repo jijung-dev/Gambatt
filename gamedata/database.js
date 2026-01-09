@@ -17,8 +17,8 @@ export async function initDatabase() {
 
     console.log(
         isNewDB
-            ? "\n[DB] Creating new database..."
-            : "\n[DB] Using existing database"
+            ? "[DB] Creating new database..."
+            : "[DB] Using existing database"
     );
     console.log("[DB] Path:", dbPath);
     console.log("[DB] Ready\n");

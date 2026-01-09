@@ -15,3 +15,6 @@ config.json
 
 #ignore node_modules
 node_modules/
+
+#ignore logs
+logs/
