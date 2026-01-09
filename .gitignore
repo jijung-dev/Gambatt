@@ -13,6 +13,12 @@ config.json
 # ignore .sh files
 *.sh
 
+# ignore .json files
+*.json
+
+# ignore .db files
+*.db
+
 #ignore node_modules
 node_modules/
 
