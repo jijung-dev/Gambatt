@@ -1,20 +1,23 @@
 import winston from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
+import fs from "fs";
+import path from "path";
 
-/* -------------------- TIME FORMAT -------------------- */
-function timeFormat() {
-    const d = new Date();
-    const pad = (n) => String(n).padStart(2, "0");
-
-    return (
-        `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ` +
-        `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-    );
+/* -------------------- LOG DIRECTORY -------------------- */
+const LOG_DIR = "./logs";
+if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
 }
 
+/* -------------------- TIME FORMAT -------------------- */
+const timeFormat = winston.format.timestamp({
+    format: "DD-MM-YYYY HH:mm:ss",
+});
+
 /* -------------------- FILE ROTATION -------------------- */
-const transport = new DailyRotateFile({
-    filename: "logs/app-%Y-week-%W.log",
+const fileTransport = new DailyRotateFile({
+    dirname: LOG_DIR,
+    filename: "app-%DATE%.log",
     datePattern: "YYYY-[week]-WW",
     maxFiles: "2w",
 });
@@ -22,10 +25,15 @@ const transport = new DailyRotateFile({
 /* -------------------- LOGGER -------------------- */
 const logger = winston.createLogger({
     level: "debug",
-    transports: [new winston.transports.Console(), transport],
-    format: winston.format.printf(({ level, message }) => {
-        return `[${timeFormat()}][${level.toUpperCase().padEnd(5)}] ${message}`;
-    }),
+    format: winston.format.combine(
+        timeFormat,
+        winston.format.printf(({ timestamp, level, message }) => {
+            return `[${timestamp}][${level
+                .toUpperCase()
+                .padEnd(5)}] ${message}`;
+        })
+    ),
+    transports: [new winston.transports.Console(), fileTransport],
 });
 
 /* -------------------- CONSOLE OVERRIDE -------------------- */
@@ -63,3 +71,5 @@ console.debug = (...args) => {
     original.debug(...args);
     logger.debug(formatArgs(args));
 };
+
+export default logger;
