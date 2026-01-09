@@ -18,7 +18,7 @@ export async function createRoom(hostID) {
     await db.run(
         `INSERT INTO rooms (id, host, game, member)
          VALUES (?, ?, ?, ?)`,
-        [roomID, hostID, null, JSON.stringify({})]
+        [roomID, hostID, null, JSON.stringify([])]
     );
 
     return roomID;
