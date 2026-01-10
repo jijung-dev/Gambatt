@@ -4,146 +4,97 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
 import { initDatabase } from "#data";
+import { resetAllGames } from "#utils/roomdata_handler.js";
 
-// ESM replacement for __dirname
+/* -------------------- ESM __dirname -------------------- */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load JSON config
-const configPath = path.join(__dirname, "config.json");
-const rawData = fs.readFileSync(configPath, "utf-8");
-const { clientId, token } = JSON.parse(rawData);
+/* -------------------- Config -------------------- */
+const { clientId, token } = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "config.json"), "utf8")
+);
 
-// Create client
+/* -------------------- Client -------------------- */
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
     ],
 });
 
-// Storage Objects
+/* -------------------- Storage -------------------- */
 client.commands = new Map();
-client.selects = new Map();
 client.buttons = new Map();
-client.disabledCommands = new Set([
-    // "createchannel",
-    // "viewchannel",
-    // "deletechannel",
-    // "editchannel",
-    // "roll",
-    // "roll10",
-    // "collection",
-    // "profile",
-    // "balance",
-    // "banner",
-]);
+client.selects = new Map();
+client.games = new Map();
+client.gameStates = new Map(); 
 
-/* -------------------- Helper: Recursively Collect JS Files -------------------- */
+/* -------------------- Helper -------------------- */
 function getFiles(dir) {
     if (!fs.existsSync(dir)) return [];
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    return entries.flatMap((file) =>
-        file.isDirectory()
-            ? getFiles(path.join(dir, file.name))
-            : file.name.endsWith(".js")
-            ? path.join(dir, file.name)
-            : []
-    );
+    return fs
+        .readdirSync(dir, { withFileTypes: true })
+        .flatMap((e) =>
+            e.isDirectory()
+                ? getFiles(path.join(dir, e.name))
+                : e.name.endsWith(".js")
+                ? path.join(dir, e.name)
+                : []
+        );
 }
 
-/* -------------------- Load Commands -------------------- */
-const commandFiles = getFiles(path.join(__dirname, "interactive", "commands"));
-const slashCommandsJSON = [];
+/* -------------------- Commands -------------------- */
+const slashJSON = [];
+for (const file of getFiles(path.join(__dirname, "interactive/commands"))) {
+    const mod = await import(pathToFileURL(file).href);
+    const cmd = mod.default;
+    if (!cmd?.name) continue;
 
-for (const file of commandFiles) {
-    const commandURL = pathToFileURL(file).href;
-    const importedModule = await import(commandURL);
-    const command = importedModule.default || importedModule;
-    if (!command || !command.name) continue;
-
-    if (command.name) {
-        client.commands.set(command.name, {
-            ...importedModule,
-            default: command, // default handler
-        });
-        if (command.aliases && Array.isArray(command.aliases)) {
-            for (const alias of command.aliases) {
-                client.commands.set(alias, command);
-            }
-        }
-    }
-
-    if (command.data) {
-        slashCommandsJSON.push(command.data.toJSON());
-    }
+    client.commands.set(cmd.name, mod);
+    cmd.aliases?.forEach((a) => client.commands.set(a, mod));
+    if (cmd.data) slashJSON.push(cmd.data.toJSON());
 }
 
-/* -------------------- Load Selects -------------------- */
-const selectFiles = getFiles(path.join(__dirname, "interactive", "selects"));
-for (const file of selectFiles) {
-    const selectURL = pathToFileURL(file).href;
-    const importedModule = await import(selectURL);
-    const select = importedModule.default || importedModule;
-    if (!select || !select.id) continue;
-
-    // Store all exports (default + named) together
-    client.selects.set(select.id, {
-        ...importedModule,
-        default: select, // default handler
-    });
+/* -------------------- Buttons -------------------- */
+for (const file of getFiles(path.join(__dirname, "interactive/buttons"))) {
+    const mod = await import(pathToFileURL(file).href);
+    if (mod.default?.id) client.buttons.set(mod.default.id, mod);
 }
 
-/* -------------------- Load Buttons -------------------- */
-const buttonFiles = getFiles(path.join(__dirname, "interactive", "buttons"));
-for (const file of buttonFiles) {
-    const buttonURL = pathToFileURL(file).href;
-    const importedModule = await import(buttonURL);
-    const button = importedModule.default || importedModule;
-    if (!button || !button.id) continue;
-
-    // Store all exports (default + named) together
-    client.buttons.set(button.id, {
-        ...importedModule,
-        default: button, // default handler
-    });
-}
-
-/* -------------------- Deploy Slash Commands -------------------- */
-async function deploySlashCommands() {
-    const rest = new REST().setToken(token);
-    try {
-        console.log(`Deploying ${slashCommandsJSON.length} slash commands...`);
-        await rest.put(Routes.applicationCommands(clientId), {
-            body: slashCommandsJSON,
-        });
-        console.log("✅ Slash commands registered globally.");
-    } catch (error) {
-        console.error("Error deploying slash commands:", error);
+/* -------------------- Games -------------------- */
+for (const file of getFiles(path.join(__dirname, "interactive/game"))) {
+    const mod = await import(pathToFileURL(file).href);
+    if (mod.default?.id) {
+        client.games.set(mod.default.id, mod.default);
+        console.log(`🎮 Loaded game: ${mod.default.id}`);
     }
 }
 
-/* -------------------- Load Events -------------------- */
-const eventFiles = fs
+/* -------------------- Events -------------------- */
+for (const file of fs
     .readdirSync(path.join(__dirname, "events"))
-    .filter((file) => file.endsWith(".js"));
+    .filter((f) => f.endsWith(".js"))) {
+    const { default: event } = await import(
+        pathToFileURL(path.join(__dirname, "events", file)).href
+    );
+    event.once
+        ? client.once(event.name, (...a) => event.execute(client, ...a))
+        : client.on(event.name, (...a) => event.execute(client, ...a));
+}
 
-for (const file of eventFiles) {
-    const eventURL = pathToFileURL(path.join(__dirname, "events", file)).href;
-    const { default: event } = await import(eventURL);
-    if (!event) continue;
-
-    if (event.once) {
-        client.once(event.name, (...args) => event.execute(client, ...args));
-    } else {
-        client.on(event.name, (...args) => event.execute(client, ...args));
-    }
+/* -------------------- Slash Deploy -------------------- */
+async function deploy() {
+    await new REST({ version: "10" })
+        .setToken(token)
+        .put(Routes.applicationCommands(clientId), { body: slashJSON });
 }
 
 /* -------------------- Startup -------------------- */
 (async () => {
-    await deploySlashCommands();
     await initDatabase();
-    client.login(token);
+    await resetAllGames();
+    await deploy();
+    await client.login(token);
 })();

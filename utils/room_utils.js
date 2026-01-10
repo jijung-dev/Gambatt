@@ -21,11 +21,14 @@ export async function getRoomEmbed(target, roomID) {
             .join("\n");
     }
 
+    const gameInfo = target.client.games.get(roomInfo.game);
+
     return new EmbedBuilder()
         .setTitle("Room Info")
         .setDescription(
-            `RoomID: \`${roomInfo.id}\`\n\n` +
-                `**Host:** \`${hostUser.displayName}\``
+            `RoomID: \`\`\`${roomInfo.id}\`\`\`\n` +
+                `**Host:** \`${hostUser.displayName}\`\n` +
+                `**Game:** \`${gameInfo?.name ?? "Nothing"}\``
         )
         .addFields({
             name: "Members:",
@@ -35,30 +38,27 @@ export async function getRoomEmbed(target, roomID) {
         .setColor("#00b0f4");
 }
 
-export async function getJoinedEmbed(target, roomID, userID) {
-    if (!roomID || !userID) return null;
-
-    const joinUser = await getUser(target, userID);
+export async function getJoinedEmbed(roomInfo, userID) {
+    if (!roomInfo || !userID) return null;
 
     return new EmbedBuilder()
-        .setAuthor({
-            name: joinUser.displayName,
-        })
         .setTitle("Room Joined")
-        .setDescription(`RoomID: \`${roomID}\``)
+        .setDescription(`RoomID: \`${roomInfo}\``)
         .setColor("#00b0f4");
 }
 
-export async function getLeaveedEmbed(target, roomID, userID) {
-    if (!roomID || !userID) return null;
+export async function getLeaveedEmbed(roomInfo, userID) {
+    if (!roomInfo || !userID) return null;
 
-    const leaveUser = await getUser(target, userID);
+    if (roomInfo == "ROOM_CLOSED") {
+        return new EmbedBuilder()
+            .setTitle("Host Left")
+            .setDescription(`Room closed`)
+            .setColor("#00b0f4");
+    }
 
     return new EmbedBuilder()
-        .setAuthor({
-            name: leaveUser.displayName,
-        })
         .setTitle("Room Left")
-        .setDescription(`RoomID: \`${roomID}\``)
+        .setDescription(`RoomID: \`${roomInfo}\``)
         .setColor("#00b0f4");
 }

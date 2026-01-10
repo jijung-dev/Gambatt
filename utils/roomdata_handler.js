@@ -18,7 +18,7 @@ export async function createRoom(hostID) {
     await db.run(
         `INSERT INTO rooms (id, host, game, member)
          VALUES (?, ?, ?, ?)`,
-        [roomID, hostID, null, JSON.stringify([])]
+        [roomID, "@" + hostID, null, JSON.stringify([])]
     );
 
     return roomID;
@@ -59,7 +59,9 @@ export async function getRoom(roomID) {
 export async function getUserRoom(userID) {
     if (!userID) return null;
 
-    let room = await db.get("SELECT * FROM rooms WHERE host = ?", [userID]);
+    let room = await db.get("SELECT * FROM rooms WHERE host = ?", [
+        "@" + userID,
+    ]);
 
     if (room) {
         return {
@@ -86,7 +88,9 @@ export async function getUserRoom(userID) {
 export async function isInRoom(userID) {
     if (!userID) return false;
 
-    let row = await db.get("SELECT id FROM rooms WHERE host = ?", [userID]);
+    let row = await db.get("SELECT id FROM rooms WHERE host = ?", [
+        "@" + userID,
+    ]);
     if (row) return true;
 
     const rooms = await db.all("SELECT member FROM rooms");
@@ -122,7 +126,7 @@ export async function addMember(roomID, userID) {
         roomID,
     ]);
 
-    return true;
+    return roomID;
 }
 
 export async function removeMember(userID) {
@@ -130,7 +134,7 @@ export async function removeMember(userID) {
 
     let room = await db.get(
         "SELECT id, host, member FROM rooms WHERE host = ?",
-        [userID]
+        ["@" + userID]
     );
 
     if (room) {
@@ -151,9 +155,42 @@ export async function removeMember(userID) {
                 r.id,
             ]);
 
-            return true;
+            return r.id;
         }
     }
 
     return false;
+}
+
+// -------------------- GAMES --------------------
+
+export async function changeGame(roomID, gameID) {
+    if (!roomID) return false;
+
+    const room = await db.get("SELECT id FROM rooms WHERE id = ?", [roomID]);
+    if (!room) return false;
+
+    await db.run("UPDATE rooms SET game = ? WHERE id = ?", [
+        gameID ?? null,
+        roomID,
+    ]);
+
+    return true;
+}
+
+export async function hasGame(roomID) {
+    if (!roomID) return false;
+
+    const row = await db.get("SELECT game FROM rooms WHERE id = ?", [roomID]);
+
+    if (!row) return false;
+
+    return row.game !== null && row.game !== -1;
+}
+
+export async function resetAllGames() {
+    await db.run(`
+        UPDATE rooms
+        SET game = -1
+    `);
 }

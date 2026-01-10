@@ -38,7 +38,7 @@ async function getLeaveEmbed(target) {
         return target.reply(ErrorMessage);
     }
 
-    const leaveedEmbed = await getLeaveedEmbed(target, success, user.id);
+    const leaveedEmbed = await getLeaveedEmbed(success, user.id);
     return leaveedEmbed;
 }
 

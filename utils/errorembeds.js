@@ -13,21 +13,13 @@ import { MessageFlags, Embed, EmbedBuilder } from "discord.js";
 //         .setColor("#f50000");
 // }
 
-/**
- * Get a failed embed for missing arguments.
- * @returns {Embed}
- */
 export function getMissingArgumentEmbed() {
     return new EmbedBuilder()
         .setTitle("❌ You missing some arguemnts")
         .setDescription(`Use \`/help\` for more info.`)
         .setColor("#f50000");
 }
-/**
- * Get a failed embed for a room that doesn't exist.
- * @param  {string} roomID - Room ID that doesn't exist.
- * @returns {Embed}
- */
+
 export function getFailedToGetRoomEmbed(roomID) {
     return new EmbedBuilder()
         .setTitle("❌ That room doesn't exist")
@@ -35,10 +27,6 @@ export function getFailedToGetRoomEmbed(roomID) {
         .setColor("#f50000");
 }
 
-/**
- * Get a failed embed for when you already in a room.
- * @returns {Embed}
- */
 export function getFailedToJoinEmbed() {
     return new EmbedBuilder()
         .setTitle("❌ You already in a room. Leave the room if you in one")
@@ -46,10 +34,6 @@ export function getFailedToJoinEmbed() {
         .setColor("#f50000");
 }
 
-/**
- * Get a failed embed for leaving non-existing room.
- * @returns {Embed}
- */
 export function getFailedToLeaveEmbed() {
     return new EmbedBuilder()
         .setTitle("❌ You are not in a room right now")
@@ -59,14 +43,34 @@ export function getFailedToLeaveEmbed() {
         .setColor("#f50000");
 }
 
-/**
- * Get a failed embed for host a room when you already in a room.
- * @returns {Embed}
- */
 export function getFailedToHostEmbed() {
     return new EmbedBuilder()
         .setTitle("❌ You already in a room. Leave before u can host")
         .setDescription(`Use \`/leave\` to leave the room`)
+        .setColor("#f50000");
+}
+
+export function getFailedToStartGameEmbed() {
+    return new EmbedBuilder()
+        .setTitle("❌ No Game Selected")
+        .setDescription("Use **/choose** `<game_id>` first.")
+        .setColor("#f50000");
+}
+
+export function getFailedToGetGameEmbed(gameID) {
+    return new EmbedBuilder()
+        .setTitle("❌ That game does not exist.")
+        .setDescription(`GameID: \`${gameID}\``)
+        .setColor("#f50000");
+}
+
+export function getFailedNotEnoughPlayerEmbed(game) {
+    console.log("what");
+    return new EmbedBuilder()
+        .setTitle("❌ Cannot Start Game")
+        .setDescription(
+            `Requires **${game.minPlayers}–${game.maxPlayers}** players.`
+        )
         .setColor("#f50000");
 }
 

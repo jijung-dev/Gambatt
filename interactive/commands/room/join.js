@@ -58,7 +58,7 @@ async function getJoinEmbed(target, roomID) {
         return target.reply(ErrorMessage);
     }
 
-    const joinedEmbed = await getJoinedEmbed(target, success, user.id);
+    const joinedEmbed = await getJoinedEmbed(success, user.id);
     return joinedEmbed;
 }
 

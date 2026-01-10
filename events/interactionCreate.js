@@ -3,7 +3,10 @@ import { ErrorMessage } from "#utils/errorembeds.js";
 import { MessageFlags, PermissionFlagsBits } from "discord.js";
 
 function getHandler(map, customId) {
-    return map?.get(customId) ?? map?.get(customId.split("|")[0]);
+    for (const [key, handler] of map) {
+        if (customId.startsWith(key)) return handler;
+    }
+    return null;
 }
 
 export default {
@@ -53,7 +56,11 @@ export default {
             }
 
             if (
-                await isRestricted(interaction.guild.id, interaction.channel.id) && commandName != "channel"
+                (await isRestricted(
+                    interaction.guild.id,
+                    interaction.channel.id
+                )) &&
+                commandName != "channel"
             ) {
                 return interaction.reply({
                     content: "🚫 Commands are disabled in this channel.",

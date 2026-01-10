@@ -7,7 +7,15 @@
  * @returns {Promise<import("discord.js").User>} The fetched user.
  */
 export async function getUser(target, mention = null) {
-    const id = mention?.replace(/[<@!>]/g, "");
-    const metionUser = await target.client.users.fetch(id).catch(() => null);
-    return metionUser || target.user || target.author;
+    // If mention is provided, resolve it explicitly
+    if (typeof mention === "string") {
+        const id = mention.replace(/[<@!>]/g, "");
+        if (/^\d+$/.test(id)) {
+            const user = await target.client.users.fetch(id).catch(() => null);
+            if (user) return user;
+        }
+    }
+    if (target.user) return target.user;
+    if (target.author) return target.author;
+    return null;
 }

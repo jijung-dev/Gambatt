@@ -15,7 +15,7 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS rooms (
     id INTEGER PRIMARY KEY,
-    host INTEGER NOT NULL,
+    host TEXT NOT NULL,
     game INTEGER DEFAULT NULL,
     member TEXT DEFAULT '[]'
 );
@@ -189,7 +189,7 @@ SCHEMA_TABLES=()
 SCHEMA_TABLES+=("rooms")
 apply_table_schema "rooms" \
   "id:id INTEGER PRIMARY KEY" \
-  "host:host INTEGER NOT NULL"\
+  "host:host TEXT NOT NULL"\
   "game:game INTEGER DEFAULT NULL"\
   "member:member TEXT DEFAULT '[]'"
 
